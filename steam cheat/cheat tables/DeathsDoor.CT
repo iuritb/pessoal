@@ -1,0 +1,2059 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="34">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>3633</ID>
+      <Description>"Enable"</Description>
+      <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+      <LastState/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+---------------------------------------------------------------------------------------------------------------------------------------
+--Game		: Death's Door
+--Version	:
+--Date		: July 20, 2021
+--Author	: aSwedishMagyar
+---------------------------------------------------------------------------------------------------------------------------------------
+--Bulk Function Save/Read
+---------------------------------------------------------------------------------------------------------------------------------------
+function saveFunctions(funcList)
+	local name = 'functionList'
+	local file = refreshTableFile(name)
+	file.Stream.Position = 0
+	local numFuncs = stringToByteTable(#funcList)
+	file.Stream.write(numFuncs,#numFuncs)
+	for i = 1,#funcList do
+		local funcName = funcList[i]
+		local funcEncode = encodeFunction(_G[funcList[i]])
+		local bytes = stringToByteTable(funcName.."\n"..funcEncode)
+		file.Stream.write(bytes,#bytes)
+	end
+end
+function readFunctions()
+	local name = 'functionList'
+	local file = findTableFile(name)
+	if file == nil then return nil end
+    local stringStream = createStringStream()
+    stringStream.copyFrom(file.Stream,file.Stream.Size)
+	local funcList = createStringList()
+    funcList.text = stringStream.DataString
+    local numFunc = tonumber(funcList[0])
+	for i = 1,#numFunc do
+		local funcName = funcList[i]
+		_G[funcName] = decodeFunction(funcList[i+1])
+	end
+	funcList.destroy()
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--Table File Helper Functions
+---------------------------------------------------------------------------------------------------------------------------------------
+function refreshTableFile(name)
+	local file = findTableFile(name)
+    if file then file.Delete() end
+    return createTableFile(name)
+end
+function tableFileWriteBytes(file,bytes)
+	file.Stream.Position = 0
+    file.Stream.write(bytes,#bytes)
+end
+function createByteTableString(byteTable)
+	if byteTable == nil or type(byteTable) ~= 'table' then return end
+    local str = ""
+	for i = 1,#byteTable do
+		local byte = string.format('%0X',byteTable[i])
+        str = str..byte
+    end
+    return str
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--Get Address From Opcode
+---------------------------------------------------------------------------------------------------------------------------------------
+function getAddressFromOpcode(opAddr)
+	local disassembler = createDisassembler()
+	disassembler.disassemble(opAddr)
+    local disTable = disassembler.getLastDisassembleData()
+    local modrm = disTable.modrmValue
+    local param = disTable.parameterValue
+    if modrm and modrm ~= 0 then return modrm
+    elseif param and param ~= 0 then return param end
+	return nil
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--Enable/Disable Section
+---------------------------------------------------------------------------------------------------------------------------------------
+function onEnable()
+	local luaEngine = GetLuaEngine()
+    luaEngine.MenuItem5.doClick()
+    readFunctions()
+    registerBaseAddresses()
+    cleanUpStructures()
+    addStructs()
+    setUpdateTimer(100)
+    setupFOVHotkey()
+    luaEngine.hide()
+end
+function onDisable()
+	cleanUpStructures()
+    unregisterBaseAddresses()
+    removeFOVHotkey()
+    setUpdateTimer(1000)
+end
+function getStaticsList()
+	return {'PlayerGlobal','Inventory','UIArrowChargeBar','CameraMovementControl','FovZoom','ForestSpiritController'}
+end
+function getStructsList()
+	return {'PlayerGlobal','Damageable','DamageableCharacter','DamageablePlayer','CharacterMovementControl','DashPower','LadderClimber',
+    		'WeaponControl','WeaponOffhandControl','_Weapon','_ArrowPower','UIArrowChargeBar',
+    		'Inventory','List`1','InventoryItem',
+            'CameraMovementControl','FovZoom','ForestSpiritController'}
+end
+function registerBaseAddresses()
+	local staticsList = getStaticsList()
+    for i = 1,#staticsList do setupStatics(staticsList[i]) end
+end
+function unregisterBaseAddresses()
+	local staticsList = getStaticsList()
+    for i = 1,#staticsList do unregisterSymbol(staticsList[i]) end
+end
+function addStructs()
+	local structsList = getStructsList()
+    for i = 1,#structsList do setupStructure(structsList[i]) end
+end
+function setUpdateTimer(time)
+	local upTimer = getUpdateTimer()
+    upTimer.SetInterval(time)
+end
+function cleanUpStructures()
+	local count = 0
+	while getStructureCount() ~= 0 do
+    	getStructure(0):Destroy()
+        count = count + 1
+        if count &gt; 1000 then return end
+    end
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--Game Specific Functions
+---------------------------------------------------------------------------------------------------------------------------------------
+function setGodMode(val)
+	local base = getDamageablePlayer()
+	local off = getAddressSafe('DamageablePlayer.godmode')
+    if base and off then writeBytes(base+off,val) end
+end
+function checkSprintKey(key)
+	local base1 = getCharacterMovementControl()
+    local base2 = getLadderClimber()
+    local offS = getAddressSafe('CharacterMovementControl.maxSpeed')
+    local offA = getAddressSafe('CharacterMovementControl.acceleration')
+    local offL = getAddressSafe('LadderClimber.climbSpeed')
+    if base1 == nil or base2 == nil or offS == nil or offA == nil or offL == nil then return end
+	if isKeyPressed(key) then
+    	writeFloat(base1+offS,25)
+        writeFloat(base1+offA,25)
+        writeFloat(base2+offL,25)
+    else
+    	writeFloat(base1+offS,12)
+        writeFloat(base1+offA,3)
+        writeFloat(base2+offL,6)
+    end
+end
+function createMyTimer(func,params,interval)
+	if func == nil then return nil end
+	local timer = createTimer()
+	timer.Interval = interval
+	timer.OnTimer = function() func(params) end
+	return timer
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--Pointer Base Functions
+---------------------------------------------------------------------------------------------------------------------------------------
+function getCharacterMovementControl()
+	return getAddressSafe('[[PlayerGlobal]+PlayerGlobal.moveControl]')
+end
+function getDamageablePlayer()
+	return getAddressSafe('[[PlayerGlobal]+PlayerGlobal.dmg]')
+end
+function getLadderClimber()
+	return getAddressSafe('[[PlayerGlobal]+PlayerGlobal.climber]')
+end
+function getFovZoom()
+	return getAddressSafe('[FovZoom]')
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--Mono Related Functions
+---------------------------------------------------------------------------------------------------------------------------------------
+function setupStatics(statName)
+	local classId = mono_findClass('',statName)
+	local stat = mono_class_getStaticFieldAddress(nil, classId)
+    if stat and stat ~= 0 then unregisterSymbol(statName); registerSymbol(statName,stat) end
+end
+function setupStructure(className)
+	local classId = mono_findClass('',className)
+	local fieldList = mono_class_enumFields(classId)
+    local struct = createStructure(className)
+    struct.beginUpdate()
+    for i = 1,#fieldList do
+    	local element = struct.addElement()
+        element.setOffset(fieldList[i].offset)
+        element.setName(fieldList[i].name)
+        element.setVartype(monoTypeToVarType(fieldList[i].monotype))
+    end
+    struct.endUpdate()
+    struct.addToGlobalStructureList()
+end
+function setupArgs(methodId,args)
+    local params = mono_method_get_parameters(methodId)
+    local args_t={}
+    for i=1, #params.parameters do
+      args_t[i] = {}
+      args_t[i].type = monoTypeToVartypeLookup[params.parameters[i].type]
+	  args_t[i].value = args[i]
+    end
+    return args_t
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--Cake-san's Mono Enable/Disable Functions (found here: https://fearlessrevolution.com/viewtopic.php?f=11&amp;t=15628)
+---------------------------------------------------------------------------------------------------------------------------------------
+function onMemRecPreExecute(memoryrecord, newstate)
+  if memoryrecord.Type == vtAutoAssembler then LaunchMonoDataCollector()end
+end
+function onMemRecPostExecute(memoryrecord, newState, succeeded )
+  if memoryrecord.Type == vtAutoAssembler then
+    miMonoActivateClick(sender)
+  end
+end
+---------------------------------------------------------------------------------------------------------------------------------------
+--FOV Hotkey
+---------------------------------------------------------------------------------------------------------------------------------------
+function setupFOVHotkey()
+    setGlobalDelayBetweenHotkeyActivation(1)
+    setGlobalKeyPollInterval(1)
+    local VK_CONTROL = 0x11
+    local VK_ADD = 0x6B
+    local VK_SUBTRACT = 0x6D
+    incFOV = createHotkey(increaseFOV,{VK_CONTROL,VK_ADD})
+    decFOV = createHotkey(decreaseFOV,{VK_CONTROL,VK_SUBTRACT})
+end
+function removeFOVHotkey()
+    incFOV.destroy()
+    decFOV.destroy()
+end
+function increaseFOV()
+	local base = getAddressSafe('[FovZoom]')
+    local off = getAddressSafe('FovZoom.currentBaseFov')
+	if base == nil or off == nil then return end
+    local cVal = readFloat(base+off)
+    if cVal == nil then return end
+    writeFloat(base+off,cVal+0.1)
+end
+function decreaseFOV(value)
+	local base = getFOVZoom()
+    local off = getAddressSafe('FovZoom.currentBaseFov')
+	if base == nil or off == nil then return end
+    local cVal = readFloat(base+off)
+    if cVal == nil then return end
+    if cVal-0.1 &lt; 1 then return end
+    writeFloat(base+off,cVal-0.1)
+end
+if syntaxcheck then return end
+if process == nil or readInteger(process) == nil then error('Not Attached to DeathsDoor.exe') end
+[ENABLE]
+mono_initialize()
+LaunchMonoDataCollector()
+onEnable()
+[DISABLE]
+onDisable()
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>26513</ID>
+          <Description>"Enable Sprint Key (Shift by default)"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 
+	Date	: July 27, 2021
+	Author	: aSwedishMagyar
+}
+{$lua}
+if syntaxcheck then return end
+[ENABLE]
+spT = createMyTimer(checkSprintKey,VK_SHIFT,10)
+[DISABLE]
+spT.destroy()
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>26116</ID>
+          <Description>"Pointers"</Description>
+          <Options moHideChildren="1"/>
+          <LastState Value="" RealAddress="00000000"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>26077</ID>
+              <Description>"PlayerGlobal"</Description>
+              <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+              <LastState Value="" RealAddress="24176443BB0"/>
+              <ShowAsSigned>0</ShowAsSigned>
+              <GroupHeader>1</GroupHeader>
+              <Address>PlayerGlobal</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>2</ID>
+                  <Description>"DamageablePlayer"</Description>
+                  <Options moHideChildren="1"/>
+                  <LastState Value="" RealAddress="2417566BD20"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <GroupHeader>1</GroupHeader>
+                  <Address>+PlayerGlobal.dmg</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>26538</ID>
+                      <Description>"currentHealth"</Description>
+                      <LastState Value="5" RealAddress="2417566BD68"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+Damageable.currentHealth</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26539</ID>
+                      <Description>"invulTimer"</Description>
+                      <LastState Value="0" RealAddress="2417566BD6C"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+Damageable.invulTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26540</ID>
+                      <Description>"explosionInvulTimer"</Description>
+                      <LastState Value="0" RealAddress="2417566BD70"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+Damageable.explosionInvulTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26541</ID>
+                      <Description>"maxHealth"</Description>
+                      <LastState Value="5" RealAddress="2417566BD74"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+Damageable.maxHealth</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26542</ID>
+                      <Description>"homingTarget"</Description>
+                      <LastState Value="1" RealAddress="2417566BD78"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+Damageable.homingTarget</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26543</ID>
+                      <Description>"refuelArrowCharge"</Description>
+                      <LastState Value="1" RealAddress="2417566BD79"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+Damageable.refuelArrowCharge</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26546</ID>
+                      <Description>"playerDamageOnly"</Description>
+                      <LastState Value="0" RealAddress="2417566BD7C"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+Damageable.playerDamageOnly</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26568</ID>
+                      <Description>"maxInvulTime"</Description>
+                      <LastState Value="1" RealAddress="2417566BE60"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.maxInvulTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26569</ID>
+                      <Description>"flashTimer"</Description>
+                      <LastState Value="0.04949848354" RealAddress="2417566BE64"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.flashTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26570</ID>
+                      <Description>"maxFlashTime"</Description>
+                      <LastState Value="0.05000000075" RealAddress="2417566BE68"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.maxFlashTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26571</ID>
+                      <Description>"flashState"</Description>
+                      <LastState Value="1" RealAddress="2417566BE6C"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+DamageableCharacter.flashState</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26572</ID>
+                      <Description>"flashCount"</Description>
+                      <LastState Value="0" RealAddress="2417566BE70"/>
+                      <VariableType>4 Bytes</VariableType>
+                      <Address>+DamageableCharacter.flashCount</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26578</ID>
+                      <Description>"maxFlashes"</Description>
+                      <LastState Value="5" RealAddress="2417566BEA0"/>
+                      <VariableType>4 Bytes</VariableType>
+                      <Address>+DamageableCharacter.maxFlashes</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26581</ID>
+                      <Description>"flashIntensity"</Description>
+                      <LastState Value="1" RealAddress="2417566BEAC"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.flashIntensity</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26589</ID>
+                      <Description>"crackTimer"</Description>
+                      <LastState Value="-8.940696716E-8" RealAddress="2417566BEC8"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.crackTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26590</ID>
+                      <Description>"maxCrackTime"</Description>
+                      <LastState Value="0.5" RealAddress="2417566BECC"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.maxCrackTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26591</ID>
+                      <Description>"crackFluxPower"</Description>
+                      <LastState Value="0.25" RealAddress="2417566BED0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.crackFluxPower</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26592</ID>
+                      <Description>"drownTimer"</Description>
+                      <LastState Value="0" RealAddress="2417566BED4"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.drownTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26593</ID>
+                      <Description>"drownTween"</Description>
+                      <LastState Value="2" RealAddress="2417566BED8"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.drownTween</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26594</ID>
+                      <Description>"drownDelay"</Description>
+                      <LastState Value="0" RealAddress="2417566BEDC"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageableCharacter.drownDelay</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26525</ID>
+                      <Description>"stunTime"</Description>
+                      <LastState Value="1.5" RealAddress="2417566BF18"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageablePlayer.stunTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26526</ID>
+                      <Description>"injuredTimer"</Description>
+                      <LastState Value="0" RealAddress="2417566BF1C"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DamageablePlayer.injuredTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26527</ID>
+                      <Description>"injured"</Description>
+                      <LastState Value="0" RealAddress="2417566BF20"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+DamageablePlayer.injured</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26528</ID>
+                      <Description>"playedRecover"</Description>
+                      <LastState Value="0" RealAddress="2417566BF21"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+DamageablePlayer.playedRecover</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26529</ID>
+                      <Description>"godmode"</Description>
+                      <LastState Value="0" RealAddress="2417566BF22"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+DamageablePlayer.godmode</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26126</ID>
+                  <Description>"PlayerMovementControl"</Description>
+                  <Options moHideChildren="1"/>
+                  <LastState Value="" RealAddress="24175636960"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <GroupHeader>1</GroupHeader>
+                  <Address>+PlayerGlobal.moveControl</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>26599</ID>
+                      <Description>"maxSpeed"</Description>
+                      <LastState Value="12" RealAddress="24175636990"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.maxSpeed</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26600</ID>
+                      <Description>"acceleration"</Description>
+                      <LastState Value="3" RealAddress="24175636994"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.acceleration</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26601</ID>
+                      <Description>"slowDownMultiplier"</Description>
+                      <LastState Value="0.8000000119" RealAddress="24175636998"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.slowDownMultiplier</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26602</ID>
+                      <Description>"characterHeight"</Description>
+                      <LastState Value="1" RealAddress="2417563699C"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.characterHeight</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26610</ID>
+                      <Description>"speedLimiter"</Description>
+                      <LastState Value="0.9999998808" RealAddress="241756369E4"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.speedLimiter</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26611</ID>
+                      <Description>"rotationSpeed"</Description>
+                      <LastState Value="20" RealAddress="241756369E8"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.rotationSpeed</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26612</ID>
+                      <Description>"slowDown"</Description>
+                      <LastState Value="1" RealAddress="241756369EC"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.slowDown</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26614</ID>
+                      <Description>"speedMultiplier"</Description>
+                      <LastState Value="1" RealAddress="241756369F4"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.speedMultiplier</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26615</ID>
+                      <Description>"limitVelocityToMaxSpeed"</Description>
+                      <LastState Value="1" RealAddress="241756369F8"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+CharacterMovementControl.limitVelocityToMaxSpeed</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26616</ID>
+                      <Description>"spawnInTime"</Description>
+                      <LastState Value="0" RealAddress="241756369FC"/>
+                      <VariableType>4 Bytes</VariableType>
+                      <Address>+CharacterMovementControl.spawnInTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26617</ID>
+                      <Description>"overrideGravity"</Description>
+                      <LastState Value="1" RealAddress="24175636A00"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+CharacterMovementControl.overrideGravity</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26618</ID>
+                      <Description>"gravity"</Description>
+                      <LastState Value="2" RealAddress="24175636A04"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+CharacterMovementControl.gravity</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26127</ID>
+                  <Description>"DashPower"</Description>
+                  <Options moHideChildren="1"/>
+                  <LastState Value="" RealAddress="24175609C80"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <GroupHeader>1</GroupHeader>
+                  <Address>+PlayerGlobal.dashPower</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>26629</ID>
+                      <Description>"maxDashTime"</Description>
+                      <LastState Value="0.5" RealAddress="24175609CE8"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DashPower.maxDashTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26630</ID>
+                      <Description>"dashSpeed"</Description>
+                      <LastState Value="25" RealAddress="24175609CEC"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DashPower.dashSpeed</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26631</ID>
+                      <Description>"cooldownTime"</Description>
+                      <LastState Value="0.25" RealAddress="24175609CF0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DashPower.cooldownTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26632</ID>
+                      <Description>"invulTime"</Description>
+                      <LastState Value="0.3000000119" RealAddress="24175609CF4"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DashPower.invulTime</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26633</ID>
+                      <Description>"defaultLayer"</Description>
+                      <LastState Value="0" RealAddress="24175609CF8"/>
+                      <VariableType>4 Bytes</VariableType>
+                      <Address>+DashPower.defaultLayer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26634</ID>
+                      <Description>"dashVector"</Description>
+                      <LastState Value="3100466893" RealAddress="24175609CFC"/>
+                      <VariableType>4 Bytes</VariableType>
+                      <Address>+DashPower.dashVector</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26635</ID>
+                      <Description>"dashTimer"</Description>
+                      <LastState Value="0" RealAddress="24175609D08"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DashPower.dashTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26636</ID>
+                      <Description>"playerDash"</Description>
+                      <LastState Value="1" RealAddress="24175609D0C"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+DashPower.playerDash</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26637</ID>
+                      <Description>"cooldownTimer"</Description>
+                      <LastState Value="0" RealAddress="24175609D10"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+DashPower.cooldownTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26638</ID>
+                      <Description>"rollFlag"</Description>
+                      <LastState Value="0" RealAddress="24175609D14"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+DashPower.rollFlag</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26790</ID>
+                  <Description>"LadderClimber"</Description>
+                  <Options moHideChildren="1"/>
+                  <LastState Value="" RealAddress="2415C7ED870"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <GroupHeader>1</GroupHeader>
+                  <Address>+PlayerGlobal.climber</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>26799</ID>
+                      <Description>"climbSpeed"</Description>
+                      <LastState Value="6" RealAddress="2415C7ED8C0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+LadderClimber.climbSpeed</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26809</ID>
+                      <Description>"climbingOffTop"</Description>
+                      <LastState Value="0" RealAddress="2415C7ED8EC"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+LadderClimber.climbingOffTop</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26232</ID>
+                  <Description>"WeaponControl"</Description>
+                  <Options moHideChildren="1"/>
+                  <LastState Value="" RealAddress="23F24459850"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <GroupHeader>1</GroupHeader>
+                  <Address>+PlayerGlobal.weaponControl</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>26740</ID>
+                      <Description>"LightAttack"</Description>
+                      <Options moHideChildren="1"/>
+                      <LastState Value="" RealAddress="241CCD7A840"/>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <GroupHeader>1</GroupHeader>
+                      <Address>+WeaponControl.lightAttack</Address>
+                      <Offsets>
+                        <Offset>0</Offset>
+                      </Offsets>
+                      <CheatEntries>
+                        <CheatEntry>
+                          <ID>26766</ID>
+                          <Description>"baseDamage"</Description>
+                          <LastState Value="0.5" RealAddress="241CCD7A8E0"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.baseDamage</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26767</ID>
+                          <Description>"poiseDamage"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A8E4"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.poiseDamage</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26768</ID>
+                          <Description>"slashPower"</Description>
+                          <LastState Value="6" RealAddress="241CCD7A8E8"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashPower</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26769</ID>
+                          <Description>"slashTime"</Description>
+                          <LastState Value="0.400000006" RealAddress="241CCD7A8EC"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashTime</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26770</ID>
+                          <Description>"slashRadius"</Description>
+                          <LastState Value="2.5" RealAddress="241CCD7A8F0"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashRadius</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26771</ID>
+                          <Description>"stamina"</Description>
+                          <LastState Value="1" RealAddress="241CCD7A8F4"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.stamina</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26772</ID>
+                          <Description>"switchDirectionsOnSwing"</Description>
+                          <LastState Value="1" RealAddress="241CCD7A8F8"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.switchDirectionsOnSwing</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26773</ID>
+                          <Description>"color"</Description>
+                          <LastState Value="0.3647058904" RealAddress="241CCD7A8FC"/>
+                          <ShowAsSigned>0</ShowAsSigned>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.color</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26774</ID>
+                          <Description>"type"</Description>
+                          <LastState Value="1" RealAddress="241CCD7A90C"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.type</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26775</ID>
+                          <Description>"biggerScale"</Description>
+                          <LastState Value="1" RealAddress="241CCD7A910"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.biggerScale</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26776</ID>
+                          <Description>"slashTimer"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A914"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashTimer</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26777</ID>
+                          <Description>"timeModifier"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A918"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.timeModifier</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26778</ID>
+                          <Description>"slashVector"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A91C"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.slashVector</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26779</ID>
+                          <Description>"slashActive"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A928"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.slashActive</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26780</ID>
+                          <Description>"extraSlashPower"</Description>
+                          <LastState Value="1" RealAddress="241CCD7A92C"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.extraSlashPower</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26781</ID>
+                          <Description>"animIsHeavy"</Description>
+                          <LastState Value="1" RealAddress="241CCD7A930"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.animIsHeavy</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26782</ID>
+                          <Description>"didAttack"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A931"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.didAttack</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26783</ID>
+                          <Description>"rollSlash"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A932"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.rollSlash</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26784</ID>
+                          <Description>"checkBulletDeflections"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A941"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.checkBulletDeflections</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26785</ID>
+                          <Description>"addCharges"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A97C"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.addCharges</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26786</ID>
+                          <Description>"minSlashRot"</Description>
+                          <LastState Value="15" RealAddress="241CCD7A980"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.minSlashRot</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26787</ID>
+                          <Description>"maxSlashRot"</Description>
+                          <LastState Value="30" RealAddress="241CCD7A984"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.maxSlashRot</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26788</ID>
+                          <Description>"isUpgraded"</Description>
+                          <LastState Value="0" RealAddress="241CCD7A98A"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.isUpgraded</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26789</ID>
+                          <Description>"holsterOverride"</Description>
+                          <LastState Value="1" RealAddress="241CCD7A98B"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.holsterOverride</Address>
+                        </CheatEntry>
+                      </CheatEntries>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26765</ID>
+                      <Description>"HeavyAttack"</Description>
+                      <Options moHideChildren="1"/>
+                      <LastState Value="" RealAddress="241C4A9A540"/>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <GroupHeader>1</GroupHeader>
+                      <Address>+WeaponControl.heavyAttack</Address>
+                      <Offsets>
+                        <Offset>0</Offset>
+                      </Offsets>
+                      <CheatEntries>
+                        <CheatEntry>
+                          <ID>26741</ID>
+                          <Description>"baseDamage"</Description>
+                          <LastState Value="1" RealAddress="241C4A9A5E0"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.baseDamage</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26742</ID>
+                          <Description>"poiseDamage"</Description>
+                          <LastState Value="1" RealAddress="241C4A9A5E4"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.poiseDamage</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26743</ID>
+                          <Description>"slashPower"</Description>
+                          <LastState Value="18" RealAddress="241C4A9A5E8"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashPower</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26744</ID>
+                          <Description>"slashTime"</Description>
+                          <LastState Value="0.6000000238" RealAddress="241C4A9A5EC"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashTime</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26745</ID>
+                          <Description>"slashRadius"</Description>
+                          <LastState Value="3" RealAddress="241C4A9A5F0"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashRadius</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26746</ID>
+                          <Description>"stamina"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A5F4"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.stamina</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26747</ID>
+                          <Description>"switchDirectionsOnSwing"</Description>
+                          <LastState Value="1" RealAddress="241C4A9A5F8"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.switchDirectionsOnSwing</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26748</ID>
+                          <Description>"color"</Description>
+                          <LastState Value="1052424891" RealAddress="241C4A9A5FC"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.color</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26749</ID>
+                          <Description>"type"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A60C"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.type</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26750</ID>
+                          <Description>"biggerScale"</Description>
+                          <LastState Value="1" RealAddress="241C4A9A610"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.biggerScale</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26751</ID>
+                          <Description>"slashTimer"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A614"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.slashTimer</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26752</ID>
+                          <Description>"timeModifier"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A618"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.timeModifier</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26753</ID>
+                          <Description>"slashVector"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A61C"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.slashVector</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26754</ID>
+                          <Description>"slashActive"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A628"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.slashActive</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26755</ID>
+                          <Description>"extraSlashPower"</Description>
+                          <LastState Value="1" RealAddress="241C4A9A62C"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.extraSlashPower</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26756</ID>
+                          <Description>"animIsHeavy"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A630"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.animIsHeavy</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26757</ID>
+                          <Description>"didAttack"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A631"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.didAttack</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26758</ID>
+                          <Description>"rollSlash"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A632"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.rollSlash</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26759</ID>
+                          <Description>"checkBulletDeflections"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A641"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.checkBulletDeflections</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26760</ID>
+                          <Description>"addCharges"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A67C"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_Weapon.addCharges</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26761</ID>
+                          <Description>"minSlashRot"</Description>
+                          <LastState Value="15" RealAddress="241C4A9A680"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.minSlashRot</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26762</ID>
+                          <Description>"maxSlashRot"</Description>
+                          <LastState Value="30" RealAddress="241C4A9A684"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_Weapon.maxSlashRot</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26763</ID>
+                          <Description>"isUpgraded"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A68A"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.isUpgraded</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26764</ID>
+                          <Description>"holsterOverride"</Description>
+                          <LastState Value="0" RealAddress="241C4A9A68B"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_Weapon.holsterOverride</Address>
+                        </CheatEntry>
+                      </CheatEntries>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26731</ID>
+                      <Description>"timeBetweenAttacks"</Description>
+                      <LastState Value="0.150000006" RealAddress="23F24459954"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponControl.timeBetweenAttacks</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26671</ID>
+                      <Description>"staminaTimer"</Description>
+                      <LastState Value="-0.009999975562" RealAddress="23F24459958"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponControl.staminaTimer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26672</ID>
+                      <Description>"stamina"</Description>
+                      <LastState Value="3" RealAddress="23F2445995C"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponControl.stamina</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26673</ID>
+                      <Description>"maxStamina"</Description>
+                      <LastState Value="3" RealAddress="23F24459960"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponControl.maxStamina</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26674</ID>
+                      <Description>"slashDirection"</Description>
+                      <LastState Value="1" RealAddress="23F24459964"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+WeaponControl.slashDirection</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26675</ID>
+                      <Description>"preGodDmg"</Description>
+                      <LastState Value="0" RealAddress="23F24459968"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponControl.preGodDmg</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26676</ID>
+                      <Description>"godmode"</Description>
+                      <LastState Value="0" RealAddress="23F2445996C"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+WeaponControl.godmode</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26677</ID>
+                      <Description>"singleFrameBuffer"</Description>
+                      <LastState Value="0.05000000075" RealAddress="23F24459970"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponControl.singleFrameBuffer</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26678</ID>
+                      <Description>"hookSlash"</Description>
+                      <LastState Value="0" RealAddress="23F24459974"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+WeaponControl.hookSlash</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26507</ID>
+                  <Description>"WeaponOffhandControl"</Description>
+                  <Options moHideChildren="1"/>
+                  <LastState Value="" RealAddress="23F24456540"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <GroupHeader>1</GroupHeader>
+                  <Address>+PlayerGlobal.weaponOffhandControl</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>26506</ID>
+                      <Description>"_ArrowPower"</Description>
+                      <Options moHideChildren="1"/>
+                      <LastState Value="" RealAddress="2415C5F1EA0"/>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <GroupHeader>1</GroupHeader>
+                      <Address>+WeaponOffhandControl.arrowPower</Address>
+                      <Offsets>
+                        <Offset>0</Offset>
+                      </Offsets>
+                      <CheatEntries>
+                        <CheatEntry>
+                          <ID>26850</ID>
+                          <Description>"timeForFullCharge"</Description>
+                          <LastState Value="0.25" RealAddress="2415C5F1F40"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.timeForFullCharge</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26851</ID>
+                          <Description>"timeForSecondaryCharge"</Description>
+                          <LastState Value="1" RealAddress="2415C5F1F44"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.timeForSecondaryCharge</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26852</ID>
+                          <Description>"requiredCharge"</Description>
+                          <LastState Value="1" RealAddress="2415C5F1F48"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_ArrowPower.requiredCharge</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26853</ID>
+                          <Description>"maxAmmoCharges"</Description>
+                          <LastState Value="4" RealAddress="2415C5F1F4C"/>
+                          <VariableType>4 Bytes</VariableType>
+                          <Address>+_ArrowPower.maxAmmoCharges</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26854</ID>
+                          <Description>"minChargeThreshHold"</Description>
+                          <LastState Value="1" RealAddress="2415C5F1F50"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.minChargeThreshHold</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26855</ID>
+                          <Description>"charge"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F54"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.charge</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26856</ID>
+                          <Description>"secondaryCharge"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F58"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.secondaryCharge</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26860</ID>
+                          <Description>"chargeTimeModifier"</Description>
+                          <LastState Value="1" RealAddress="2415C5F1F78"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.chargeTimeModifier</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26862</ID>
+                          <Description>"cameraShake"</Description>
+                          <LastState Value="1" RealAddress="2415C5F1F7D"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_ArrowPower.cameraShake</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26494</ID>
+                          <Description>"showBowMesh"</Description>
+                          <LastState Value="1" RealAddress="2415C5F1F7E"/>
+                          <ShowAsSigned>0</ShowAsSigned>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_ArrowPower.showBowMesh</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26864</ID>
+                          <Description>"arrowIsUpgraded"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F7F"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_ArrowPower.arrowIsUpgraded</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26865</ID>
+                          <Description>"hasUpgrade"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F80"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_ArrowPower.hasUpgrade</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26866</ID>
+                          <Description>"halfCharges"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F81"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_ArrowPower.halfCharges</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26867</ID>
+                          <Description>"secondZoom"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F84"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.secondZoom</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26871</ID>
+                          <Description>"maxSecondaryCharge"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F90"/>
+                          <VariableType>Byte</VariableType>
+                          <Address>+_ArrowPower.maxSecondaryCharge</Address>
+                        </CheatEntry>
+                        <CheatEntry>
+                          <ID>26872</ID>
+                          <Description>"aimCharge"</Description>
+                          <LastState Value="0" RealAddress="2415C5F1F94"/>
+                          <VariableType>Float</VariableType>
+                          <Address>+_ArrowPower.aimCharge</Address>
+                        </CheatEntry>
+                      </CheatEntries>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26826</ID>
+                      <Description>"crosshairScale"</Description>
+                      <LastState Value="-0.200001359" RealAddress="23F244565D0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponOffhandControl.crosshairScale</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>26831</ID>
+                      <Description>"onGroundTester"</Description>
+                      <LastState Value="0.25" RealAddress="23F244565E8"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+WeaponOffhandControl.onGroundTester</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26873</ID>
+              <Description>"UIArrowChargeBar"</Description>
+              <Options moHideChildren="1"/>
+              <LastState Value="" RealAddress="24175618BE0"/>
+              <ShowAsSigned>0</ShowAsSigned>
+              <GroupHeader>1</GroupHeader>
+              <Address>UIArrowChargeBar</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>26878</ID>
+                  <Description>"halfCharges"</Description>
+                  <LastState Value="0" RealAddress="24175618C08"/>
+                  <VariableType>Byte</VariableType>
+                  <Address>+UIArrowChargeBar.halfCharges</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26879</ID>
+                  <Description>"currentCharge"</Description>
+                  <LastState Value="4" RealAddress="24175618C0C"/>
+                  <VariableType>Float</VariableType>
+                  <Address>+UIArrowChargeBar.currentCharge</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26880</ID>
+                  <Description>"cooldown"</Description>
+                  <LastState Value="-0.009999975562" RealAddress="24175618C10"/>
+                  <VariableType>Float</VariableType>
+                  <Address>+UIArrowChargeBar.cooldown</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26881</ID>
+                  <Description>"hiddenStoredCharges"</Description>
+                  <LastState Value="4" RealAddress="24175618C14"/>
+                  <VariableType>Float</VariableType>
+                  <Address>+UIArrowChargeBar.hiddenStoredCharges</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26882</ID>
+                  <Description>"requiredChargesPerShot"</Description>
+                  <LastState Value="1" RealAddress="24175618C18"/>
+                  <VariableType>Float</VariableType>
+                  <Address>+UIArrowChargeBar.requiredChargesPerShot</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>26883</ID>
+                  <Description>"maxDelay"</Description>
+                  <LastState Value="0" RealAddress="24175618C1C"/>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+UIArrowChargeBar.maxDelay</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26125</ID>
+              <Description>"Generate Inventory"</Description>
+              <Options moHideChildren="1"/>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 
+	Date	: July 20, 2021
+	Author	: aSwedishMagyar
+}
+{$lua}
+function createRecord(base,desc,topRec)
+	local addList = getAddressList()
+    local newRec = addList.createMemoryRecord()
+    newRec.Address = base
+    newRec.Description = desc
+    newRec.Type = 2
+    newRec.appendToEntry(topRec)
+end
+function createHeader(base,desc,topRec)
+	local addList = getAddressList()
+    local header = addList.createMemoryRecord()
+    header.Address = base
+    header.Description = desc
+    header.IsAddressGroupHeader = true
+    header.options = '[moHideChildren]'
+    header.appendToEntry(topRec)
+    return header
+end
+function getItemName(base)
+	local addr = readPointer(base+0x18)
+    if addr == nil then return '' end
+    return readString(addr+0x14,100,true)
+end
+function createItem(base,mainRec)
+	local name = getItemName(base)
+    local topRec = createHeader(base,name,mainRec)
+    createRecord('+InventoryItem.stackCount','stackCount',topRec)
+	createRecord('+InventoryItem.maxStack','maxStack',topRec)
+end
+function generateItemlist(mainRec)
+	local base = getAddressSafe('[[Inventory]+Inventory.itemList]')
+    local off1 = getAddressSafe('List`1._size')
+    local off2 = getAddressSafe('List`1._items')
+    local num = readInteger(base+off1) - 1
+    base = readPointer(base+off2)+0x20
+    for i = 0,num do createItem(readPointer(base+i*8),mainRec) end
+end
+function removeRecords(mainRec)
+    if mainRec ~= nil then
+	    while mainRec.Count &gt; 0 do
+	       mainRec.Child[0]:Delete()
+	    end
+    end
+end
+if syntaxcheck then return end
+[ENABLE]
+generateItemlist(memrec)
+[DISABLE]
+removeRecords(memrec)
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26511</ID>
+              <Description>"FovZoom"</Description>
+              <Options moHideChildren="1"/>
+              <LastState Value="" RealAddress="2415FFECD20"/>
+              <ShowAsSigned>0</ShowAsSigned>
+              <GroupHeader>1</GroupHeader>
+              <Address>FovZoom</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>26512</ID>
+                  <Description>"currentBaseFov (default: 7)"</Description>
+                  <LastState Value="7" RealAddress="2415FFECD4C"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+FovZoom.currentBaseFov</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26515</ID>
+              <Description>"ForestSpiritController"</Description>
+              <LastState Value="" RealAddress="241B77CBEE0"/>
+              <ShowAsSigned>0</ShowAsSigned>
+              <GroupHeader>1</GroupHeader>
+              <Address>ForestSpiritController</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>26115</ID>
+          <Description>"Scripts"</Description>
+          <Options moHideChildren="1"/>
+          <LastState Value="" RealAddress="00000000"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>26189</ID>
+              <Description>"God Mode"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 2019.4.26.14636
+	Date	: 2021-07-20
+	Author	: aSwedishMagyar
+}
+//Unique AOB: 55 48 8B EC 48 81 EC C0 00 00 00 48 89 75 E0 48 89 7D E8 4C 89 75 F0 4C 89 7D F8 48 8B F9 F3
+define(godmode,DamageablePlayer:ReceiveDamage)
+define(godmodeBytes,55)
+[ENABLE]
+assert(godmode,godmodeBytes)
+
+godmode:
+	db C3
+[DISABLE]
+godmode:
+	db godmodeBytes
+
+{
+// ORIGINAL CODE - INJECTION POINT: DamageablePlayer:ReceiveDamage
+
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+137: 48 33 C0                       - xor rax,rax
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+13a: 48 8D 6D 00                    - lea rbp,[rbp+00]
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+13e: 49 BB 83 0F C0 61 FB 01 00 00  - mov r11,000001FB61C00F83
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+148: 41 FF D3                       - call r11
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+14b: 4C 8B E8                       - mov r13,rax
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+14e: 48 85 C0                       - test rax,rax
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+151: 75 CB                          - jne UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+11e
+UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+153: EB 89                          - jmp UnityEngine:PhysicsScene:Internal_SphereCastNonAlloc_Injected+de
+1FD7B1A9EA5: 00 00                          - add [rax],al
+1FD7B1A9EA7: 00 01                          - add [rcx],al
+1FD7B1A9EA9: 04 02                          - add al,02
+1FD7B1A9EAB: 05 04 03 01 50                 - add eax,50010304
+1FD7B1A9EB0: 00 00                          - add [rax],al
+1FD7B1A9EB2: 00 00                          - add [rax],al
+1FD7B1A9EB4: 00 00                          - add [rax],al
+1FD7B1A9EB6: 00 00                          - add [rax],al
+1FD7B1A9EB8: 00 00                          - add [rax],al
+1FD7B1A9EBA: 00 00                          - add [rax],al
+1FD7B1A9EBC: 00 00                          - add [rax],al
+1FD7B1A9EBE: 00 00                          - add [rax],al
+// ---------- INJECTING HERE ----------
+DamageablePlayer:ReceiveDamage: 55                             - push rbp
+// ---------- DONE INJECTING  ----------
+DamageablePlayer:ReceiveDamage+1: 48 8B EC                       - mov rbp,rsp
+DamageablePlayer:ReceiveDamage+4: 48 81 EC C0 00 00 00           - sub rsp,000000C0
+DamageablePlayer:ReceiveDamage+b: 48 89 75 E0                    - mov [rbp-20],rsi
+DamageablePlayer:ReceiveDamage+f: 48 89 7D E8                    - mov [rbp-18],rdi
+DamageablePlayer:ReceiveDamage+13: 4C 89 75 F0                    - mov [rbp-10],r14
+DamageablePlayer:ReceiveDamage+17: 4C 89 7D F8                    - mov [rbp-08],r15
+DamageablePlayer:ReceiveDamage+1b: 48 8B F9                       - mov rdi,rcx
+DamageablePlayer:ReceiveDamage+1e: F3 0F 11 55 80                 - movss [rbp-80],xmm2
+DamageablePlayer:ReceiveDamage+23: 4C 89 8D 78 FF FF FF           - mov [rbp-00000088],r9
+DamageablePlayer:ReceiveDamage+2a: 48 8B 75 38                    - mov rsi,[rbp+38]
+DamageablePlayer:ReceiveDamage+2e: 48 B8 00 4F 48 61 FB 01 00 00  - mov rax,PlayerGlobal
+DamageablePlayer:ReceiveDamage+38: 48 8B 00                       - mov rax,[rax]
+DamageablePlayer:ReceiveDamage+3b: 48 8B C8                       - mov rcx,rax
+DamageablePlayer:ReceiveDamage+3e: 83 39 00                       - cmp dword ptr [rcx],00
+DamageablePlayer:ReceiveDamage+41: F3 0F 10 80 88 00 00 00        - movss xmm0,[rax+00000088]
+DamageablePlayer:ReceiveDamage+49: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+DamageablePlayer:ReceiveDamage+4d: 66 0F 57 C9                    - xorpd xmm1,xmm1
+DamageablePlayer:ReceiveDamage+51: 48 33 C0                       - xor rax,rax
+DamageablePlayer:ReceiveDamage+54: 66 0F 2F C8                    - comisd xmm1,xmm0
+DamageablePlayer:ReceiveDamage+58: 7A 04                          - jp DamageablePlayer:ReceiveDamage+5e
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26122</ID>
+              <Description>"Toggle God Mode (Mono Version, should always work)"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 
+	Date	: July 20, 2021
+	Author	: aSwedishMagyar
+}
+{$lua}
+if syntaxcheck then return end
+local base = getAddressSafe('[PlayerGlobal]')
+if base == nil or readInteger(base) == nil then error('Unable to find PlayerGlobal instance') end
+local className = 'PlayerGlobal'
+local methodName = 'ToggleGodMode'
+local methodId = mono_findMethod(namespace, className, methodName)
+local domainId = nil
+[ENABLE]
+mono_compile_method(methodId)
+mono_invoke_method(domainId, methodId, base, {})
+return 'nop'
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26427</ID>
+              <Description>"Modify Damage"</Description>
+              <Options moHideChildren="1"/>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 2019.4.26.14636
+	Date	: 2021-07-21
+	Author	: aSwedishMagyar
+}
+//Unique AOB: 56 56 0F 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 55 48 8B EC 48 83 EC 30
+define(damageModifier,Inventory:GetMeleeDamageModifier)
+[ENABLE]
+registersymbol(damageMult)
+alloc(damageMult,50,damageModifier)
+damageMult:
+	dq (double)1
+    readmem(damageModifier,30)
+damageModifier:
+	mulsd xmm0,[damageMult]
+    movsd [rbp-78],xmm0
+    cvtsd2ss xmm0,xmm0
+    ret
+[DISABLE]
+damageModifier:
+	readmem(damageMult+8,30)
+unregistersymbol(damageMult)
+dealloc(damageMult)
+{
+// ORIGINAL CODE - INJECTION POINT: Inventory:GetMeleeDamageModifier
+
+20FFE800B55: 00 00                          - add [rax],al
+20FFE800B57: 00 00                          - add [rax],al
+20FFE800B59: 00 00                          - add [rax],al
+20FFE800B5B: 00 00                          - add [rax],al
+20FFE800B5D: 00 49 BB                       - add [rcx-45],cl
+20FFE800B60: 20 02                          - and [rdx],al
+20FFE800B62: EC                             - in al,dx
+20FFE800B63: AA                             - stosb 
+20FFE800B64: 0D 02 00 00 41                 - or eax,41000002
+20FFE800B69: FF D3                          - call rbx
+20FFE800B6B: 08 E0                          - or al,ah
+20FFE800B6D: 30 56 56                       - xor [rsi+56],dl
+20FFE800B70: 0F 02 00                       - lar eax,[rax]
+20FFE800B73: 00 00                          - add [rax],al
+20FFE800B75: 00 00                          - add [rax],al
+20FFE800B77: 00 00                          - add [rax],al
+20FFE800B79: 00 00                          - add [rax],al
+20FFE800B7B: 00 00                          - add [rax],al
+20FFE800B7D: 00 00                          - add [rax],al
+20FFE800B7F: 00                             - db 00 
+// ---------- INJECTING HERE ----------
+Inventory:GetMeleeDamageModifier: 55                             - push rbp
+// ---------- DONE INJECTING  ----------
+Inventory:GetMeleeDamageModifier+1: 48 8B EC                       - mov rbp,rsp
+Inventory:GetMeleeDamageModifier+4: 48 83 EC 30                    - sub rsp,30
+Inventory:GetMeleeDamageModifier+8: 48 89 75 F8                    - mov [rbp-08],rsi
+Inventory:GetMeleeDamageModifier+c: 48 B8 A0 32 4A 0C 0F 02 00 00  - mov rax,Inventory
+Inventory:GetMeleeDamageModifier+16: 48 8B 00                       - mov rax,[rax]
+Inventory:GetMeleeDamageModifier+19: 48 8B C8                       - mov rcx,rax
+Inventory:GetMeleeDamageModifier+1c: 48 BA 50 41 77 FD 0F 02 00 00  - mov rdx,0000020FFD774150
+Inventory:GetMeleeDamageModifier+26: 83 38 00                       - cmp dword ptr [rax],00
+Inventory:GetMeleeDamageModifier+29: 48 8D 64 24 00                 - lea rsp,[rsp+00]
+Inventory:GetMeleeDamageModifier+2e: 49 BB C0 A9 33 A7 0D 02 00 00  - mov r11,Inventory:GetItem
+Inventory:GetMeleeDamageModifier+38: 41 FF D3                       - call r11
+Inventory:GetMeleeDamageModifier+3b: 48 8B F0                       - mov rsi,rax
+Inventory:GetMeleeDamageModifier+3e: 48 8B CE                       - mov rcx,rsi
+Inventory:GetMeleeDamageModifier+41: 48 8D 64 24 00                 - lea rsp,[rsp+00]
+Inventory:GetMeleeDamageModifier+46: 49 BB 60 78 92 E4 0F 02 00 00  - mov r11,UnityEngine:Object:op_Implicit
+Inventory:GetMeleeDamageModifier+50: 41 FF D3                       - call r11
+Inventory:GetMeleeDamageModifier+53: 85 C0                          - test eax,eax
+Inventory:GetMeleeDamageModifier+55: 0F 84 3F 00 00 00              - je Inventory:GetMeleeDamageModifier+9a
+Inventory:GetMeleeDamageModifier+5b: F3 0F 10 05 6D 00 00 00        - movss xmm0,[Inventory:GetMeleeDamageModifier+d0]
+Inventory:GetMeleeDamageModifier+63: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+}
+</AssemblerScript>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>26428</ID>
+                  <Description>"Multiplier"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Double</VariableType>
+                  <Address>damageMult</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26187</ID>
+              <Description>"Heal to Full"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 
+	Date	: July 20, 2021
+	Author	: aSwedishMagyar
+}
+{$lua}
+if syntaxcheck then return end
+local base = getAddressSafe('[PlayerGlobal]')
+if base == nil or readInteger(base) == nil then error('Unable to find PlayerGlobal instance') end
+local className = 'PlayerGlobal'
+local methodName = 'HealToFull'
+local methodId = mono_findMethod(namespace, className, methodName)
+local domainId = nil
+[ENABLE]
+mono_compile_method(methodId)
+mono_invoke_method(domainId, methodId, base, {})
+return 'nop'
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26121</ID>
+              <Description>"Inf Arrows"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 2019.4.26.14636
+	Date	: 2021-07-20
+	Author	: aSwedishMagyar
+}
+//Unique AOB: 55 48 8B EC 48 83 EC 30 48 89 75 F0 48 89 7D F8 48 8B F9 48 8B F2 F3 0F 10 47
+define(infArrow,UIArrowChargeBar:LoseCharge)
+define(infArrowBytes,55)
+[ENABLE]
+assert(infArrow,infArrowBytes)
+
+infArrow:
+	db C3
+[DISABLE]
+infArrow:
+	db infArrowBytes
+
+{
+// ORIGINAL CODE - INJECTION POINT: UIArrowChargeBar:LoseCharge
+
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+10d: 90                             - nop 
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+10e: 49 BB 30 1B 98 A9 EA 01 00 00  - mov r11,000001EAA9981B30
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+118: 41 FF D3                       - call r11
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+11b: 48 89 65 C0                    - mov [rbp-40],rsp
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+11f: 48 33 C0                       - xor rax,rax
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+122: 48 8D 6D 00                    - lea rbp,[rbp+00]
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+126: 49 BB 83 0F 99 A9 EA 01 00 00  - mov r11,000001EAA9990F83
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+130: 41 FF D3                       - call r11
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+133: 4C 8B F0                       - mov r14,rax
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+136: 48 85 C0                       - test rax,rax
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+139: 75 CA                          - jne UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+105
+UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+13b: EB 87                          - jmp UnityEngine:PhysicsScene:Internal_RaycastNonAlloc_Injected+c4
+1ECDCD3FDCD: 00 00                          - add [rax],al
+1ECDCD3FDCF: 00 01                          - add [rcx],al
+1ECDCD3FDD1: 04 02                          - add al,02
+1ECDCD3FDD3: 05 04 03 01 50                 - add eax,50010304
+1ECDCD3FDD8: 00 00                          - add [rax],al
+1ECDCD3FDDA: 00 00                          - add [rax],al
+1ECDCD3FDDC: 00 00                          - add [rax],al
+1ECDCD3FDDE: 00 00                          - add [rax],al
+// ---------- INJECTING HERE ----------
+UIArrowChargeBar:LoseCharge: 55                             - push rbp
+// ---------- DONE INJECTING  ----------
+UIArrowChargeBar:LoseCharge+1: 48 8B EC                       - mov rbp,rsp
+UIArrowChargeBar:LoseCharge+4: 48 83 EC 30                    - sub rsp,30
+UIArrowChargeBar:LoseCharge+8: 48 89 75 F0                    - mov [rbp-10],rsi
+UIArrowChargeBar:LoseCharge+c: 48 89 7D F8                    - mov [rbp-08],rdi
+UIArrowChargeBar:LoseCharge+10: 48 8B F9                       - mov rdi,rcx
+UIArrowChargeBar:LoseCharge+13: 48 8B F2                       - mov rsi,rdx
+UIArrowChargeBar:LoseCharge+16: F3 0F 10 47 2C                 - movss xmm0,[rdi+2C]
+UIArrowChargeBar:LoseCharge+1b: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+UIArrowChargeBar:LoseCharge+1f: F3 0F 2A CE                    - cvtsi2ss xmm1,esi
+UIArrowChargeBar:LoseCharge+23: F3 0F 5A C9                    - cvtss2sd xmm1,xmm1
+UIArrowChargeBar:LoseCharge+27: 66 0F 2F C8                    - comisd xmm1,xmm0
+UIArrowChargeBar:LoseCharge+2b: 0F 8A 52 00 00 00              - jp UIArrowChargeBar:LoseCharge+83
+UIArrowChargeBar:LoseCharge+31: 0F 87 4C 00 00 00              - ja UIArrowChargeBar:LoseCharge+83
+UIArrowChargeBar:LoseCharge+37: F3 0F 10 47 2C                 - movss xmm0,[rdi+2C]
+UIArrowChargeBar:LoseCharge+3c: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+UIArrowChargeBar:LoseCharge+40: F3 0F 2A CE                    - cvtsi2ss xmm1,esi
+UIArrowChargeBar:LoseCharge+44: F3 0F 5A C9                    - cvtss2sd xmm1,xmm1
+UIArrowChargeBar:LoseCharge+48: F2 0F 5C C1                    - subsd xmm0,xmm1
+UIArrowChargeBar:LoseCharge+4c: F2 0F 5A E8                    - cvtsd2ss xmm5,xmm0
+UIArrowChargeBar:LoseCharge+50: F3 0F 11 6F 2C                 - movss [rdi+2C],xmm5
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26509</ID>
+              <Description>"Instant Range Charge"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 2019.4.26.14636
+	Date	: 2021-07-23
+	Author	: aSwedishMagyar
+}
+define(noRangeCharge,_ArrowPower:Held+228)
+define(noRangeChargeBytes,F3 0F 10 8E D8 00 00 00)
+[ENABLE]
+assert(noRangeCharge,noRangeChargeBytes)
+alloc(fastCharge,4,noRangeCharge)
+registersymbol(fastCharge)
+
+fastCharge:
+	dd (float)0.001
+noRangeCharge:
+	movss xmm1,[fastCharge]
+[DISABLE]
+noRangeCharge:
+	db noRangeChargeBytes
+
+unregistersymbol(fastCharge)
+dealloc(fastCharge)
+
+{
+// ORIGINAL CODE - INJECTION POINT: _ArrowPower:Held+228
+
+_ArrowPower:Held+1c4: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+_ArrowPower:Held+1c8: F2 0F 5A E8                    - cvtsd2ss xmm5,xmm0
+_ArrowPower:Held+1cc: F3 0F 11 6D E8                 - movss [rbp-18],xmm5
+_ArrowPower:Held+1d1: 0F B6 86 DF 00 00 00           - movzx eax,byte ptr [rsi+000000DF]
+_ArrowPower:Held+1d8: 85 C0                          - test eax,eax
+_ArrowPower:Held+1da: 74 15                          - je _ArrowPower:Held+1f1
+_ArrowPower:Held+1dc: F3 0F 10 05 2C 05 00 00        - movss xmm0,[_ArrowPower:Held+710]
+_ArrowPower:Held+1e4: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+_ArrowPower:Held+1e8: F2 0F 5A E8                    - cvtsd2ss xmm5,xmm0
+_ArrowPower:Held+1ec: F3 0F 11 6D E8                 - movss [rbp-18],xmm5
+_ArrowPower:Held+1f1: F3 0F 10 86 B4 00 00 00        - movss xmm0,[rsi+000000B4]
+_ArrowPower:Held+1f9: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+_ArrowPower:Held+1fd: F2 0F 11 45 E0                 - movsd [rbp-20],xmm0
+_ArrowPower:Held+202: 48 8D 6D 00                    - lea rbp,[rbp+00]
+_ArrowPower:Held+206: 49 BB 00 00 E9 2B A7 02 00 00  - mov r11,UnityEngine:Time:get_fixedDeltaTime
+_ArrowPower:Held+210: 41 FF D3                       - call r11
+_ArrowPower:Held+213: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+_ArrowPower:Held+217: F2 0F 11 45 D8                 - movsd [rbp-28],xmm0
+_ArrowPower:Held+21c: F3 0F 10 86 A0 00 00 00        - movss xmm0,[rsi+000000A0]
+_ArrowPower:Held+224: F3 0F 5A C0                    - cvtss2sd xmm0,xmm0
+// ---------- INJECTING HERE ----------
+_ArrowPower:Held+228: F3 0F 10 8E D8 00 00 00        - movss xmm1,[rsi+000000D8]
+// ---------- DONE INJECTING  ----------
+_ArrowPower:Held+230: F3 0F 5A C9                    - cvtss2sd xmm1,xmm1
+_ArrowPower:Held+234: F2 0F 59 C1                    - mulsd xmm0,xmm1
+_ArrowPower:Held+238: F3 0F 10 4D EC                 - movss xmm1,[rbp-14]
+_ArrowPower:Held+23d: F3 0F 5A C9                    - cvtss2sd xmm1,xmm1
+_ArrowPower:Held+241: F2 0F 59 C1                    - mulsd xmm0,xmm1
+_ArrowPower:Held+245: F2 0F 11 45 D0                 - movsd [rbp-30],xmm0
+_ArrowPower:Held+24a: 48 8D 6D 00                    - lea rbp,[rbp+00]
+_ArrowPower:Held+24e: 49 BB 20 93 92 2C A7 02 00 00  - mov r11,Inventory:GetDexterityModifier
+_ArrowPower:Held+258: 41 FF D3                       - call r11
+_ArrowPower:Held+25b: F3 0F 5A D8                    - cvtss2sd xmm3,xmm0
+_ArrowPower:Held+25f: F2 0F 10 45 E0                 - movsd xmm0,[rbp-20]
+_ArrowPower:Held+264: F2 0F 10 4D D8                 - movsd xmm1,[rbp-28]
+_ArrowPower:Held+269: F2 0F 10 55 D0                 - movsd xmm2,[rbp-30]
+_ArrowPower:Held+26e: F2 0F 59 D3                    - mulsd xmm2,xmm3
+_ArrowPower:Held+272: F3 0F 10 5D E8                 - movss xmm3,[rbp-18]
+_ArrowPower:Held+277: F3 0F 5A DB                    - cvtss2sd xmm3,xmm3
+_ArrowPower:Held+27b: F2 0F 59 D3                    - mulsd xmm2,xmm3
+_ArrowPower:Held+27f: F2 0F 5E CA                    - divsd xmm1,xmm2
+_ArrowPower:Held+283: F2 0F 58 C1                    - addsd xmm0,xmm1
+_ArrowPower:Held+287: F2 0F 5A E8                    - cvtsd2ss xmm5,xmm0
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26281</ID>
+              <Description>"No Upgrade Cost"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 2019.4.26.14636
+	Date	: 2021-07-20
+	Author	: aSwedishMagyar
+}
+define(noUpgradeCost,Inventory:GetCostPerLevel)
+define(noUpgradeCostBytes,55 48 8B EC)
+[ENABLE]
+assert(noUpgradeCost,noUpgradeCostBytes)
+
+noUpgradeCost:
+	db 48 31 C0 C3
+[DISABLE]
+noUpgradeCost:
+	db noUpgradeCostBytes
+
+{
+// ORIGINAL CODE - INJECTION POINT: Inventory:GetCostPerLevel
+
+Inventory:GetCostPerLevel:	 	- 55                    		- push rbp
+Inventory:GetCostPerLevel+1:	- 48 8B EC              		- mov rbp,rsp
+Inventory:GetCostPerLevel+4:	- 48 83 EC 40           		- sub rsp,40
+Inventory:GetCostPerLevel+8:	- 48 89 75 F0           		- mov [rbp-10],rsi
+Inventory:GetCostPerLevel+c:	- 48 89 7D F8           		- mov [rbp-08],rdi
+Inventory:GetCostPerLevel+10:	- 48 8B F1              		- mov rsi,rcx
+Inventory:GetCostPerLevel+13:	- 48 B8 F87D4661FB010000 		- mov rax,000001FB61467DF8
+Inventory:GetCostPerLevel+1d:	- 48 8B 00              		- mov rax,[rax]
+Inventory:GetCostPerLevel+20:	- 48 63 80 FC000000     		- movsxd  rax,dword ptr [rax+000000FC]
+Inventory:GetCostPerLevel+27:	- 48 B9 F87D4661FB010000 		- mov rcx,000001FB61467DF8
+Inventory:GetCostPerLevel+31:	- 48 8B 09              		- mov rcx,[rcx]
+Inventory:GetCostPerLevel+34:	- 48 63 89 00010000     		- movsxd  rcx,dword ptr [rcx+00000100]
+Inventory:GetCostPerLevel+3b:	- 0FAF CE               		- imul ecx,esi
+Inventory:GetCostPerLevel+3e:	- 48 8B F8              		- mov rdi,rax
+Inventory:GetCostPerLevel+41:	- 03 F9                 		- add edi,ecx
+Inventory:GetCostPerLevel+43:	- 48 B8 F87D4661FB010000 		- mov rax,000001FB61467DF8
+Inventory:GetCostPerLevel+4d:	- 48 8B 08              		- mov rcx,[rax]
+Inventory:GetCostPerLevel+50:	- 48 8D 64 24 00        		- lea rsp,[rsp+00]
+
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26123</ID>
+              <Description>"Toggle One Hit Kills"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 
+	Date	: July 20, 2021
+	Author	: aSwedishMagyar
+}
+{$lua}
+if syntaxcheck then return end
+local base = getAddressSafe('[PlayerGlobal]')
+if base == nil or readInteger(base) == nil then error('Unable to find PlayerGlobal instance') end
+local className = 'PlayerGlobal'
+local methodName = 'ToggleBigDmgMode'
+local methodId = mono_findMethod(namespace, className, methodName)
+local domainId = nil
+[ENABLE]
+mono_compile_method(methodId)
+mono_invoke_method(domainId, methodId, base, {})
+return 'nop'
+[DISABLE]
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26435</ID>
+              <Description>"Disable Ranged Camera Move"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 2019.4.26.14636
+	Date	: 2021-07-22
+	Author	: aSwedishMagyar
+}
+//Unique AOB: 55 48 8B EC 48 81 EC 30 01 00 00 48 89 75 F8 48 8B F1 48 89 95 10
+define(noCameraArrow,PlayerCameraFocus:MoveTo)
+define(noCameraArrowBytes,55)
+[ENABLE]
+assert(noCameraArrow,noCameraArrowBytes)
+
+noCameraArrow:
+	db C3
+[DISABLE]
+noCameraArrow:
+	db noCameraArrowBytes
+
+{
+// ORIGINAL CODE - INJECTION POINT: PlayerCameraFocus:MoveTo
+
+_ArrowPower:showMesh+f: 48 8B 46 70                    - mov rax,[rsi+70]
+_ArrowPower:showMesh+13: 0F B6 96 DE 00 00 00           - movzx edx,byte ptr [rsi+000000DE]
+_ArrowPower:showMesh+1a: 48 8B C8                       - mov rcx,rax
+_ArrowPower:showMesh+1d: 83 38 00                       - cmp dword ptr [rax],00
+_ArrowPower:showMesh+20: 48 8D 64 24 00                 - lea rsp,[rsp+00]
+_ArrowPower:showMesh+25: 90                             - nop 
+_ArrowPower:showMesh+26: 49 BB 30 0C E9 4E 8E 01 00 00  - mov r11,UnityEngine:Renderer:set_enabled
+_ArrowPower:showMesh+30: 41 FF D3                       - call r11
+_ArrowPower:showMesh+33: 48 8B 75 F8                    - mov rsi,[rbp-08]
+_ArrowPower:showMesh+37: 48 8D 65 00                    - lea rsp,[rbp+00]
+_ArrowPower:showMesh+3b: 5D                             - pop rbp
+_ArrowPower:showMesh+3c: C3                             - ret 
+18E4EEECEAD: 00 00                          - add [rax],al
+18E4EEECEAF: 00 01                          - add [rcx],al
+18E4EEECEB1: 04 02                          - add al,02
+18E4EEECEB3: 05 04 03 01 50                 - add eax,50010304
+18E4EEECEB8: 00 00                          - add [rax],al
+18E4EEECEBA: 00 00                          - add [rax],al
+18E4EEECEBC: 00 00                          - add [rax],al
+18E4EEECEBE: 00 00                          - add [rax],al
+// ---------- INJECTING HERE ----------
+PlayerCameraFocus:MoveTo: 55                             - push rbp
+// ---------- DONE INJECTING  ----------
+PlayerCameraFocus:MoveTo+1: 48 8B EC                       - mov rbp,rsp
+PlayerCameraFocus:MoveTo+4: 48 81 EC 30 01 00 00           - sub rsp,00000130
+PlayerCameraFocus:MoveTo+b: 48 89 75 F8                    - mov [rbp-08],rsi
+PlayerCameraFocus:MoveTo+f: 48 8B F1                       - mov rsi,rcx
+PlayerCameraFocus:MoveTo+12: 48 89 95 10 FF FF FF           - mov [rbp-000000F0],rdx
+PlayerCameraFocus:MoveTo+19: F3 0F 11 95 08 FF FF FF        - movss [rbp-000000F8],xmm2
+PlayerCameraFocus:MoveTo+21: F3 0F 11 9D 00 FF FF FF        - movss [rbp-00000100],xmm3
+PlayerCameraFocus:MoveTo+29: C6 46 20 01                    - mov byte ptr [rsi+20],01
+PlayerCameraFocus:MoveTo+2d: 48 8B CE                       - mov rcx,rsi
+PlayerCameraFocus:MoveTo+30: 48 8D 64 24 00                 - lea rsp,[rsp+00]
+PlayerCameraFocus:MoveTo+35: 90                             - nop 
+PlayerCameraFocus:MoveTo+36: 49 BB 30 AC 2A 72 90 01 00 00  - mov r11,UnityEngine:Component:get_transform
+PlayerCameraFocus:MoveTo+40: 41 FF D3                       - call r11
+PlayerCameraFocus:MoveTo+43: 48 89 85 F8 FE FF FF           - mov [rbp-00000108],rax
+PlayerCameraFocus:MoveTo+4a: 48 8B 46 18                    - mov rax,[rsi+18]
+PlayerCameraFocus:MoveTo+4e: 48 8B D5                       - mov rdx,rbp
+PlayerCameraFocus:MoveTo+51: 48 81 C2 18 FF FF FF           - add rdx,FFFFFFFFFFFFFF18
+PlayerCameraFocus:MoveTo+58: 48 8B C8                       - mov rcx,rax
+PlayerCameraFocus:MoveTo+5b: 83 38 00                       - cmp dword ptr [rax],00
+PlayerCameraFocus:MoveTo+5e: 49 BB 50 65 67 73 90 01 00 00  - mov r11,UnityEngine:Transform:get_position
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>26516</ID>
+              <Description>"No Lose Conga Line (allows you to stack the same spirits)"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: DeathsDoor.exe
+	Version	: 2019.4.26.14636
+	Date	: 2021-07-27
+	Author	: aSwedishMagyar
+}
+//Unique AOB: ERROR: Could not find unique AOB; tried code "55 48 8B EC 48 83 EC 30"
+define(noLoseConga,ForestSpiritController:RemoveConga)
+define(noLoseCongaBytes,55)
+[ENABLE]
+assert(noLoseConga,noLoseCongaBytes)
+
+noLoseConga:
+	db C3
+[DISABLE]
+noLoseConga:
+	db noLoseCongaBytes
+
+{
+// ORIGINAL CODE - INJECTION POINT: ForestSpiritController:RemoveConga
+
+UIMenuPauseController:OnApplicationFocus+56: 49 BB F0 8F 79 68 83 02 00 00  - mov r11,UnityEngine:Component:get_gameObject
+UIMenuPauseController:OnApplicationFocus+60: 41 FF D3                       - call r11
+UIMenuPauseController:OnApplicationFocus+63: 48 8B D0                       - mov rdx,rax
+UIMenuPauseController:OnApplicationFocus+66: 48 B9 C0 7F EA 6B 83 02 00 00  - mov rcx,000002836BEA7FC0
+UIMenuPauseController:OnApplicationFocus+70: 48 8D 64 24 00                 - lea rsp,[rsp+00]
+UIMenuPauseController:OnApplicationFocus+75: 90                             - nop 
+UIMenuPauseController:OnApplicationFocus+76: 49 BB F0 52 70 28 81 02 00 00  - mov r11,SoundEngine:Event
+UIMenuPauseController:OnApplicationFocus+80: 41 FF D3                       - call r11
+UIMenuPauseController:OnApplicationFocus+83: 48 8B 7D F8                    - mov rdi,[rbp-08]
+UIMenuPauseController:OnApplicationFocus+87: 48 8D 65 00                    - lea rsp,[rbp+00]
+UIMenuPauseController:OnApplicationFocus+8b: 5D                             - pop rbp
+UIMenuPauseController:OnApplicationFocus+8c: C3                             - ret 
+2836FCE37BD: 00 00                          - add [rax],al
+2836FCE37BF: 00 01                          - add [rcx],al
+2836FCE37C1: 04 02                          - add al,02
+2836FCE37C3: 05 04 03 01 50                 - add eax,50010304
+2836FCE37C8: 00 00                          - add [rax],al
+2836FCE37CA: 00 00                          - add [rax],al
+2836FCE37CC: 00 00                          - add [rax],al
+2836FCE37CE: 00 00                          - add [rax],al
+// ---------- INJECTING HERE ----------
+ForestSpiritController:RemoveConga: 55                             - push rbp
+// ---------- DONE INJECTING  ----------
+ForestSpiritController:RemoveConga+1: 48 8B EC                       - mov rbp,rsp
+ForestSpiritController:RemoveConga+4: 48 83 EC 30                    - sub rsp,30
+ForestSpiritController:RemoveConga+8: 48 89 4D F8                    - mov [rbp-08],rcx
+ForestSpiritController:RemoveConga+c: 48 89 55 F0                    - mov [rbp-10],rdx
+ForestSpiritController:RemoveConga+10: 48 8B C1                       - mov rax,rcx
+ForestSpiritController:RemoveConga+13: 48 8B 40 20                    - mov rax,[rax+20]
+ForestSpiritController:RemoveConga+17: 48 8B C8                       - mov rcx,rax
+ForestSpiritController:RemoveConga+1a: 48 8B 55 F0                    - mov rdx,[rbp-10]
+ForestSpiritController:RemoveConga+1e: 83 38 00                       - cmp dword ptr [rax],00
+ForestSpiritController:RemoveConga+21: 48 8D 64 24 00                 - lea rsp,[rsp+00]
+ForestSpiritController:RemoveConga+26: 49 BB 82 27 CD 6F 83 02 00 00  - mov r11,000002836FCD2782
+ForestSpiritController:RemoveConga+30: 41 FF D3                       - call r11
+ForestSpiritController:RemoveConga+33: 48 8D 65 00                    - lea rsp,[rbp+00]
+ForestSpiritController:RemoveConga+37: 5D                             - pop rbp
+ForestSpiritController:RemoveConga+38: C3                             - ret 
+2836FCE3809: 00 00                          - add [rax],al
+2836FCE380B: 00 00                          - add [rax],al
+2836FCE380D: 00 00                          - add [rax],al
+2836FCE380F: 00 01                          - add [rcx],al
+2836FCE3811: 04 02                          - add al,02
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols>
+    <SymbolEntry>
+      <Name>ScreenShake</Name>
+      <Address>26EEFD72C10</Address>
+    </SymbolEntry>
+  </UserdefinedSymbols>
+  <Comments>Template Created by aSwedishMagyar
+https://fearlessrevolution.com/viewtopic.php?f=23&amp;t=16633
+</Comments>
+</CheatTable>

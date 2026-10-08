@@ -1,0 +1,894 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="34">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>31</ID>
+      <Description>"Enable"</Description>
+      <Options moHideChildren="1"/>
+      <LastState/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-04
+	Author	: aSwedishMagyar
+}
+{$lua}
+if syntaxcheck then return end
+function getHookPoint()
+  autoAssemble([[aobscanmodule(getCoords,TITAN.exe,8b 0d ? ? ? ? e8 ? ? ? ? 83 ec ? 8b 4c 24 ? e8 ? ? ? ? e9)
+                registersymbol(getCoords)]])
+end
+[ENABLE]
+getHookPoint()
+unregisterSymbol('baseCoords')
+registerSymbol('baseCoords',readPointer(getAddressSafe('getCoords')+2))
+
+[DISABLE]
+
+unregisterSymbol('getCoords')
+unregisterSymbol('baseCoords')
+
+--[[
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+3098B
+
+TITAN.exe.text+30937: 85 D2                    - test edx,edx
+TITAN.exe.text+30939: 75 6D                    - jne TITAN.exe.text+309A8
+TITAN.exe.text+3093B: 8B 54 24 14              - mov edx,[esp+14]
+TITAN.exe.text+3093F: 8B 42 FC                 - mov eax,[edx-04]
+TITAN.exe.text+30942: 8D 50 FF                 - lea edx,[eax-01]
+TITAN.exe.text+30945: 8B 4C 24 14              - mov ecx,[esp+14]
+TITAN.exe.text+30949: 89 51 FC                 - mov [ecx-04],edx
+TITAN.exe.text+3094C: 85 C0                    - test eax,eax
+TITAN.exe.text+3094E: 7E 74                    - jle TITAN.exe.text+309C4
+TITAN.exe.text+30950: 8B 4C 24 18              - mov ecx,[esp+18]
+TITAN.exe.text+30954: 85 C9                    - test ecx,ecx
+TITAN.exe.text+30956: 0F 84 1F FF FF FF        - je TITAN.exe.text+3087B
+TITAN.exe.text+3095C: C7 44 24 0C 00 00 00 00  - mov [esp+0C],00000000
+TITAN.exe.text+30964: 8B 4C 24 10              - mov ecx,[esp+10]
+TITAN.exe.text+30968: 8B 81 88 00 00 00        - mov eax,[ecx+00000088]
+TITAN.exe.text+3096E: 8B 91 8C 00 00 00        - mov edx,[ecx+0000008C]
+TITAN.exe.text+30974: 89 44 24 04              - mov [esp+04],eax
+TITAN.exe.text+30978: 89 54 24 08              - mov [esp+08],edx
+TITAN.exe.text+3097C: C7 04 24 05 00 00 00     - mov [esp],00000005
+TITAN.exe.text+30983: C7 44 24 20 FF FF FF FF  - mov [esp+20],FFFFFFFF
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+3098B: 8B 0D 64 66 71 00        - mov ecx,[TITAN.exe+316664]
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+30991: E8 52 A4 17 00           - call TITAN.exe.text+1AADE8
+TITAN.exe.text+30996: 83 EC 10                 - sub esp,10
+TITAN.exe.text+30999: 8B 4C 24 10              - mov ecx,[esp+10]
+TITAN.exe.text+3099D: E8 4A EC FF FF           - call TITAN.exe.text+2F5EC
+TITAN.exe.text+309A2: E9 D4 FE FF FF           - jmp TITAN.exe.text+3087B
+TITAN.exe.text+309A7: 90                       - nop 
+TITAN.exe.text+309A8: C7 44 24 04 FF FF FF FF  - mov [esp+04],FFFFFFFF
+TITAN.exe.text+309B0: 8B 44 24 14              - mov eax,[esp+14]
+TITAN.exe.text+309B4: 83 E8 04                 - sub eax,04
+TITAN.exe.text+309B7: 89 04 24                 - mov [esp],eax
+TITAN.exe.text+309BA: E8 E5 D8 21 00           - call TITAN.exe.text+24E2A4
+TITAN.exe.text+309BF: EB 8B                    - jmp TITAN.exe.text+3094C
+TITAN.exe.text+309C1: 8D 76 00                 - lea esi,[esi+00]
+TITAN.exe.text+309C4: 8B 4C 24 14              - mov ecx,[esp+14]
+TITAN.exe.text+309C8: 83 E9 0C                 - sub ecx,0C
+TITAN.exe.text+309CB: 8D 44 24 5B              - lea eax,[esp+5B]
+TITAN.exe.text+309CF: 89 04 24                 - mov [esp],eax
+TITAN.exe.text+309D2: E8 19 70 26 00           - call TITAN.exe.text+2979F0
+TITAN.exe.text+309D7: 55                       - push ebp
+TITAN.exe.text+309D8: E9 73 FF FF FF           - jmp TITAN.exe.text+30950
+--]]
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>60</ID>
+          <Description>"Pointers"</Description>
+          <LastState Value="" RealAddress="00000000"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>39</ID>
+              <Description>"Player"</Description>
+              <LastState Value="" RealAddress="00000000"/>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>28</ID>
+                  <Description>"Player Visible (only affects drawing)"</Description>
+                  <DropDownList ReadOnly="1" DescriptionOnly="1" DisplayValueAsItem="1">0:OFF
+1:ON
+</DropDownList>
+                  <LastState Value="1" RealAddress="16566B2C"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>14</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>43</ID>
+                  <Description>"Player Boss Collision (does not affect rays)"</Description>
+                  <DropDownList ReadOnly="1" DescriptionOnly="1" DisplayValueAsItem="1">0:OFF
+1:ON
+</DropDownList>
+                  <LastState Value="1" RealAddress="16566B2D"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>15</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>42</ID>
+                  <Description>"Player Movement Enable"</Description>
+                  <DropDownList ReadOnly="1" DescriptionOnly="1" DisplayValueAsItem="1">0:OFF
+1:ON
+</DropDownList>
+                  <LastState Value="1" RealAddress="16566B2E"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>16</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>41</ID>
+                  <Description>"X Coord"</Description>
+                  <LastState Value="1371.970825" RealAddress="16566BAC"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>94</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>18</ID>
+                  <Description>"Y Coord"</Description>
+                  <LastState Value="705.8276367" RealAddress="16566BB0"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>98</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>19</ID>
+                  <Description>"Speed Mult"</Description>
+                  <LastState Value="1" RealAddress="16566BC4"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>AC</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>52</ID>
+                  <Description>"Alive State"</Description>
+                  <DropDownList ReadOnly="1" DescriptionOnly="1" DisplayValueAsItem="1">0:DEAD
+1:ALIVE
+</DropDownList>
+                  <LastState Value="1" RealAddress="16566E90"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Byte</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>378</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>57</ID>
+                  <Description>"Last Damage Timer"</Description>
+                  <LastState Value="0" RealAddress="16566E9E"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>2 Bytes</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>386</Offset>
+                  </Offsets>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>49</ID>
+              <Description>"Arrow"</Description>
+              <LastState Value="" RealAddress="00000000"/>
+              <GroupHeader>1</GroupHeader>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>48</ID>
+                  <Description>"X Coord"</Description>
+                  <LastState Value="1372" RealAddress="16DF22DC"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>94</Offset>
+                    <Offset>35C</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>51</ID>
+                  <Description>"Y Coord"</Description>
+                  <LastState Value="705.666687" RealAddress="16DF22E0"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>98</Offset>
+                    <Offset>35C</Offset>
+                  </Offsets>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>50</ID>
+                  <Description>"Arrow Retrieve Speed Mult"</Description>
+                  <LastState Value="1000" RealAddress="16DF230C"/>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>baseCoords</Address>
+                  <Offsets>
+                    <Offset>C4</Offset>
+                    <Offset>35C</Offset>
+                  </Offsets>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>40</ID>
+          <Description>"Scripts"</Description>
+          <LastState Value="" RealAddress="00000000"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>59</ID>
+              <Description>"God Mode"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-08
+	Author	: aSwedishMagyar
+}
+[ENABLE]
+aobscanmodule(godMode,TITAN.exe,55 81 ec ? ? ? ? 89 4c 24 ? 8b 84 24 ? ? ? ? 89 44 24 ? 8b 94 24 ? ? ? ? 89 54 24 ? c7 44 24 ? ? ? ? ? c7 44 24 ? ? ? ? ? 8d 8c 24 ? ? ? ? 89 4c 24 ? c7 44 24 ? ? ? ? ? 89 64 24 ? 8d 44 24 ? 89 04 ? e8 ? ? ? ? d9 44 24)
+registersymbol(godMode)
+
+godMode:
+  ret 0010
+
+[DISABLE]
+godMode:
+  db 55 81 EC
+
+unregistersymbol(godMode)
+
+{
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+1AADE8
+
+TITAN.exe.text+1AAD94: DF E0                       - fnstsw ax
+TITAN.exe.text+1AAD96: F6 C4 45                    - test ah,45
+TITAN.exe.text+1AAD99: 75 C9                       - jne TITAN.exe.text+1AAD64
+TITAN.exe.text+1AAD9B: 89 D9                       - mov ecx,ebx
+TITAN.exe.text+1AAD9D: E8 1E E4 FF FF              - call TITAN.exe.text+1A91C0
+TITAN.exe.text+1AADA2: 84 C0                       - test al,al
+TITAN.exe.text+1AADA4: 74 07                       - je TITAN.exe.text+1AADAD
+TITAN.exe.text+1AADA6: C6 83 0C 04 00 00 01        - mov byte ptr [ebx+0000040C],01
+TITAN.exe.text+1AADAD: C6 83 C9 03 00 00 00        - mov byte ptr [ebx+000003C9],00
+TITAN.exe.text+1AADB4: C6 83 C8 03 00 00 01        - mov byte ptr [ebx+000003C8],01
+TITAN.exe.text+1AADBB: 8B 8B 5C 03 00 00           - mov ecx,[ebx+0000035C]
+TITAN.exe.text+1AADC1: E8 B6 0E FF FF              - call TITAN.exe.text+19BC7C
+TITAN.exe.text+1AADC6: 66 C7 83 C0 03 00 00 0F 00  - mov word ptr [ebx+000003C0],000F
+TITAN.exe.text+1AADCF: 83 C4 18                    - add esp,18
+TITAN.exe.text+1AADD2: 5B                          - pop ebx
+TITAN.exe.text+1AADD3: C3                          - ret 
+TITAN.exe.text+1AADD4: C6 81 C8 03 00 00 01        - mov byte ptr [ecx+000003C8],01
+TITAN.exe.text+1AADDB: 8B 89 5C 03 00 00           - mov ecx,[ecx+0000035C]
+TITAN.exe.text+1AADE1: E9 96 0E FF FF              - jmp TITAN.exe.text+19BC7C
+TITAN.exe.text+1AADE6: 66 90                       - nop 2
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+1AADE8: 55                          - push ebp
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+1AADE9: 81 EC 88 00 00 00           - sub esp,00000088
+TITAN.exe.text+1AADEF: 89 4C 24 28                 - mov [esp+28],ecx
+TITAN.exe.text+1AADF3: 8B 84 24 94 00 00 00        - mov eax,[esp+00000094]
+TITAN.exe.text+1AADFA: 89 44 24 2C                 - mov [esp+2C],eax
+TITAN.exe.text+1AADFE: 8B 94 24 98 00 00 00        - mov edx,[esp+00000098]
+TITAN.exe.text+1AAE05: 89 54 24 30                 - mov [esp+30],edx
+TITAN.exe.text+1AAE09: C7 44 24 54 44 DD 64 00     - mov [esp+54],TITAN.exe.text+24CD44
+TITAN.exe.text+1AAE11: C7 44 24 58 6C 74 6D 00     - mov [esp+58],TITAN.exe.text+2D646C
+TITAN.exe.text+1AAE19: 8D 8C 24 80 00 00 00        - lea ecx,[esp+00000080]
+TITAN.exe.text+1AAE20: 89 4C 24 5C                 - mov [esp+5C],ecx
+TITAN.exe.text+1AAE24: C7 44 24 60 05 C5 5A 00     - mov [esp+60],TITAN.exe.text+1AB505
+TITAN.exe.text+1AAE2C: 89 64 24 64                 - mov [esp+64],esp
+TITAN.exe.text+1AAE30: 8D 44 24 3C                 - lea eax,[esp+3C]
+TITAN.exe.text+1AAE34: 89 04 24                    - mov [esp],eax
+TITAN.exe.text+1AAE37: E8 AC 70 0B 00              - call TITAN.exe.text+261EE8
+TITAN.exe.text+1AAE3C: D9 44 24 2C                 - fld dword ptr [esp+2C]
+TITAN.exe.text+1AAE40: D9 5C 24 38                 - fstp dword ptr [esp+38]
+TITAN.exe.text+1AAE44: D9 44 24 30                 - fld dword ptr [esp+30]
+TITAN.exe.text+1AAE48: D9 5C 24 34                 - fstp dword ptr [esp+34]
+TITAN.exe.text+1AAE4C: 8B 4C 24 28                 - mov ecx,[esp+28]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>56</ID>
+              <Description>"Move When Drawing Arrow"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-08
+	Author	: aSwedishMagyar
+}
+[ENABLE]
+aobscanmodule(moveDraw,TITAN.exe,00 d9 81 04 01)
+registersymbol(moveDraw)
+
+moveDraw:
+  db 01
+
+[DISABLE]
+moveDraw:
+  db 00
+
+unregistersymbol(moveDraw)
+
+{
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+1A9BA5
+
+TITAN.exe.text+1A9B5B: 80 B9 C9 03 00 00 00  - cmp byte ptr [ecx+000003C9],00
+TITAN.exe.text+1A9B62: 0F 84 C2 01 00 00     - je TITAN.exe.text+1A9D2A
+TITAN.exe.text+1A9B68: 8B 4C 24 18           - mov ecx,[esp+18]
+TITAN.exe.text+1A9B6C: 8B 81 5C 03 00 00     - mov eax,[ecx+0000035C]
+TITAN.exe.text+1A9B72: C6 40 14 01           - mov byte ptr [eax+14],01
+TITAN.exe.text+1A9B76: D9 81 C4 03 00 00     - fld dword ptr [ecx+000003C4]
+TITAN.exe.text+1A9B7C: D9 05 CC 29 6F 00     - fld dword ptr [TITAN.exe.rdata+119CC]
+TITAN.exe.text+1A9B82: DD E1                 - fucom st(1)
+TITAN.exe.text+1A9B84: DF E0                 - fnstsw ax
+TITAN.exe.text+1A9B86: F6 C4 45              - test ah,45
+TITAN.exe.text+1A9B89: 75 12                 - jne TITAN.exe.text+1A9B9D
+TITAN.exe.text+1A9B8B: D8 E1                 - fsub st(0),st(1)
+TITAN.exe.text+1A9B8D: DC 0D 58 2A 6F 00     - fmul qword ptr [TITAN.exe.rdata+11A58]
+TITAN.exe.text+1A9B93: DE C1                 - faddp 
+fastCharge: E9 66 54 39 00        - jmp 00940000
+TITAN.exe.text+1A9B9A: 90                    - nop 
+TITAN.exe.text+1A9B9B: EB 04                 - jmp TITAN.exe.text+1A9BA1
+TITAN.exe.text+1A9B9D: DD D8                 - fstp st(0)
+TITAN.exe.text+1A9B9F: DD D8                 - fstp st(0)
+TITAN.exe.text+1A9BA1: 8B 4C 24 18           - mov ecx,[esp+18]
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+1A9BA5: C6 81 90 00 00 00 00  - mov byte ptr [ecx+00000090],00
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+1A9BAC: D9 81 04 01 00 00     - fld dword ptr [ecx+00000104]
+TITAN.exe.text+1A9BB2: D9 81 08 01 00 00     - fld dword ptr [ecx+00000108]
+TITAN.exe.text+1A9BB8: D9 C9                 - fxch st(1)
+TITAN.exe.text+1A9BBA: D8 C8                 - fmul st(0),st(0)
+TITAN.exe.text+1A9BBC: D9 C9                 - fxch st(1)
+TITAN.exe.text+1A9BBE: D8 C8                 - fmul st(0),st(0)
+TITAN.exe.text+1A9BC0: DE C1                 - faddp 
+TITAN.exe.text+1A9BC2: DD 05 60 2A 6F 00     - fld qword ptr [TITAN.exe.rdata+11A60]
+TITAN.exe.text+1A9BC8: D9 C9                 - fxch st(1)
+TITAN.exe.text+1A9BCA: DA E9                 - fucompp 
+TITAN.exe.text+1A9BCC: DF E0                 - fnstsw ax
+TITAN.exe.text+1A9BCE: F6 C4 45              - test ah,45
+TITAN.exe.text+1A9BD1: 75 18                 - jne TITAN.exe.text+1A9BEB
+TITAN.exe.text+1A9BD3: 8B 81 04 01 00 00     - mov eax,[ecx+00000104]
+TITAN.exe.text+1A9BD9: 8B 91 08 01 00 00     - mov edx,[ecx+00000108]
+TITAN.exe.text+1A9BDF: 89 81 CC 03 00 00     - mov [ecx+000003CC],eax
+TITAN.exe.text+1A9BE5: 89 91 D0 03 00 00     - mov [ecx+000003D0],edx
+TITAN.exe.text+1A9BEB: 8B 4C 24 18           - mov ecx,[esp+18]
+TITAN.exe.text+1A9BEF: D9 81 CC 03 00 00     - fld dword ptr [ecx+000003CC]
+TITAN.exe.text+1A9BF5: D9 81 D0 03 00 00     - fld dword ptr [ecx+000003D0]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>11</ID>
+              <Description>"Instant Arrow Draw"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-04
+	Author	: aSwedishMagyar
+}
+[ENABLE]
+aobscanmodule(fastCharge,TITAN.exe,D9 99 C4 03 00 00)
+registersymbol(fastCharge)
+alloc(newfastCharge,100,fastCharge)
+label(codefastCharge)
+label(returnfastCharge)
+label(trash)
+label(fullCharge)
+newfastCharge:
+  fstp dword ptr [trash]
+  fld dword ptr [fullCharge]
+codefastCharge:
+  fstp dword ptr [ecx+000003C4]
+  jmp returnfastCharge
+trash:
+  dd 0
+fullCharge:
+  dd (float)0.5
+fastCharge:
+  jmp newfastCharge
+  nop
+returnfastCharge:
+
+[DISABLE]
+fastCharge:
+  db D9 99 C4 03 00 00
+
+unregistersymbol(fastCharge)
+dealloc(newfastCharge)
+
+{
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+1A9B95
+
+TITAN.exe.text+1A9B45: 8D 50 FF              - lea edx,[eax-01]
+TITAN.exe.text+1A9B48: 8B 4C 24 1C           - mov ecx,[esp+1C]
+TITAN.exe.text+1A9B4C: 89 51 FC              - mov [ecx-04],edx
+TITAN.exe.text+1A9B4F: 85 C0                 - test eax,eax
+TITAN.exe.text+1A9B51: 0F 8E 58 02 00 00     - jng TITAN.exe.text+1A9DAF
+TITAN.exe.text+1A9B57: 8B 4C 24 18           - mov ecx,[esp+18]
+TITAN.exe.text+1A9B5B: 80 B9 C9 03 00 00 00  - cmp byte ptr [ecx+000003C9],00
+TITAN.exe.text+1A9B62: 0F 84 C2 01 00 00     - je TITAN.exe.text+1A9D2A
+TITAN.exe.text+1A9B68: 8B 4C 24 18           - mov ecx,[esp+18]
+TITAN.exe.text+1A9B6C: 8B 81 5C 03 00 00     - mov eax,[ecx+0000035C]
+TITAN.exe.text+1A9B72: C6 40 14 01           - mov byte ptr [eax+14],01
+TITAN.exe.text+1A9B76: D9 81 C4 03 00 00     - fld dword ptr [ecx+000003C4]
+TITAN.exe.text+1A9B7C: D9 05 CC 29 6F 00     - fld dword ptr [TITAN.exe.rdata+119CC]
+TITAN.exe.text+1A9B82: DD E1                 - fucom st(1)
+TITAN.exe.text+1A9B84: DF E0                 - fnstsw ax
+TITAN.exe.text+1A9B86: F6 C4 45              - test ah,45
+TITAN.exe.text+1A9B89: 75 12                 - jne TITAN.exe.text+1A9B9D
+TITAN.exe.text+1A9B8B: D8 E1                 - fsub st(0),st(1)
+TITAN.exe.text+1A9B8D: DC 0D 58 2A 6F 00     - fmul qword ptr [TITAN.exe.rdata+11A58]
+TITAN.exe.text+1A9B93: DE C1                 - faddp 
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+1A9B95: D9 99 C4 03 00 00     - fstp dword ptr [ecx+000003C4]
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+1A9B9B: EB 04                 - jmp TITAN.exe.text+1A9BA1
+TITAN.exe.text+1A9B9D: DD D8                 - fstp st(0)
+TITAN.exe.text+1A9B9F: DD D8                 - fstp st(0)
+TITAN.exe.text+1A9BA1: 8B 4C 24 18           - mov ecx,[esp+18]
+TITAN.exe.text+1A9BA5: C6 81 90 00 00 00 00  - mov byte ptr [ecx+00000090],00
+TITAN.exe.text+1A9BAC: D9 81 04 01 00 00     - fld dword ptr [ecx+00000104]
+TITAN.exe.text+1A9BB2: D9 81 08 01 00 00     - fld dword ptr [ecx+00000108]
+TITAN.exe.text+1A9BB8: D9 C9                 - fxch st(1)
+TITAN.exe.text+1A9BBA: D8 C8                 - fmul st(0),st(0)
+TITAN.exe.text+1A9BBC: D9 C9                 - fxch st(1)
+TITAN.exe.text+1A9BBE: D8 C8                 - fmul st(0),st(0)
+TITAN.exe.text+1A9BC0: DE C1                 - faddp 
+TITAN.exe.text+1A9BC2: DD 05 60 2A 6F 00     - fld qword ptr [TITAN.exe.rdata+11A60]
+TITAN.exe.text+1A9BC8: D9 C9                 - fxch st(1)
+TITAN.exe.text+1A9BCA: DA E9                 - fucompp 
+TITAN.exe.text+1A9BCC: DF E0                 - fnstsw ax
+TITAN.exe.text+1A9BCE: F6 C4 45              - test ah,45
+TITAN.exe.text+1A9BD1: 75 18                 - jne TITAN.exe.text+1A9BEB
+TITAN.exe.text+1A9BD3: 8B 81 04 01 00 00     - mov eax,[ecx+00000104]
+TITAN.exe.text+1A9BD9: 8B 91 08 01 00 00     - mov edx,[ecx+00000108]
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>14</ID>
+              <Description>"Instant Arrow Return (buggy don't use when pulling arrow from Titans)"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-04
+	Author	: aSwedishMagyar
+}
+[ENABLE]
+aobscanmodule(fastReturn,TITAN.exe,80 B9 C8 03 00 00 00 0F 84 3B)
+registersymbol(fastReturn)
+alloc(newfastReturn,100,fastReturn)
+label(codefastReturn)
+label(returnfastReturn)
+
+newfastReturn:
+  mov byte ptr [ecx+000003C8],01
+codefastReturn:
+  cmp byte ptr [ecx+000003C8],00
+  jmp returnfastReturn
+
+fastReturn:
+  jmp newfastReturn
+  nop 2
+returnfastReturn:
+
+[DISABLE]
+fastReturn:
+  db 80 B9 C8 03 00 00 00
+
+unregistersymbol(fastReturn)
+dealloc(newfastReturn)
+
+{
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+1AA72C
+
+TITAN.exe.text+1AA6D0: 89 51 FC                       - mov [ecx-04],edx
+TITAN.exe.text+1AA6D3: 85 C0                          - test eax,eax
+TITAN.exe.text+1AA6D5: 0F 8E E1 03 00 00              - jng TITAN.exe.text+1AAABC
+TITAN.exe.text+1AA6DB: 8B 4C 24 1C                    - mov ecx,[esp+1C]
+TITAN.exe.text+1AA6DF: 8B 81 5C 03 00 00              - mov eax,[ecx+0000035C]
+TITAN.exe.text+1AA6E5: D9 40 18                       - fld dword ptr [eax+18]
+TITAN.exe.text+1AA6E8: D8 61 18                       - fsub dword ptr [ecx+18]
+TITAN.exe.text+1AA6EB: D9 99 88 00 00 00              - fstp dword ptr [ecx+00000088]
+TITAN.exe.text+1AA6F1: D9 40 1C                       - fld dword ptr [eax+1C]
+TITAN.exe.text+1AA6F4: D8 61 1C                       - fsub dword ptr [ecx+1C]
+TITAN.exe.text+1AA6F7: D9 99 8C 00 00 00              - fstp dword ptr [ecx+0000008C]
+TITAN.exe.text+1AA6FD: 8B 01                          - mov eax,[ecx]
+TITAN.exe.text+1AA6FF: C7 04 24 00 00 00 00           - mov [esp],00000000
+TITAN.exe.text+1AA706: 8B 40 44                       - mov eax,[eax+44]
+TITAN.exe.text+1AA709: C7 44 24 3C FF FF FF FF        - mov [esp+3C],FFFFFFFF
+TITAN.exe.text+1AA711: FF D0                          - call eax
+TITAN.exe.text+1AA713: 50                             - push eax
+TITAN.exe.text+1AA714: 8B 4C 24 1C                    - mov ecx,[esp+1C]
+TITAN.exe.text+1AA718: C7 81 8C 00 00 00 00 00 00 00  - mov [ecx+0000008C],00000000
+TITAN.exe.text+1AA722: C7 81 88 00 00 00 00 00 00 00  - mov [ecx+00000088],00000000
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+1AA72C: 80 B9 C8 03 00 00 00           - cmp byte ptr [ecx+000003C8],00
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+1AA733: 0F 84 3B 02 00 00              - je TITAN.exe.text+1AA974
+TITAN.exe.text+1AA739: D9 EE                          - fldz 
+TITAN.exe.text+1AA73B: D9 C0                          - fld st(0)
+TITAN.exe.text+1AA73D: E9 E4 FA FF FF                 - jmp TITAN.exe.text+1AA226
+TITAN.exe.text+1AA742: 66 90                          - nop 2
+TITAN.exe.text+1AA744: C7 04 24 0D 24 6F 00           - mov [esp],TITAN.exe.rdata+1140D
+TITAN.exe.text+1AA74B: 8D 4C 24 78                    - lea ecx,[esp+78]
+TITAN.exe.text+1AA74F: E8 84 59 0C 00                 - call TITAN.exe.text+2700D8
+TITAN.exe.text+1AA754: 51                             - push ecx
+TITAN.exe.text+1AA755: 85 C0                          - test eax,eax
+TITAN.exe.text+1AA757: 0F 84 02 FC FF FF              - je TITAN.exe.text+1AA35F
+TITAN.exe.text+1AA75D: C7 04 24 23 24 6F 00           - mov [esp],TITAN.exe.rdata+11423
+TITAN.exe.text+1AA764: 8D 4C 24 78                    - lea ecx,[esp+78]
+TITAN.exe.text+1AA768: E8 6B 59 0C 00                 - call TITAN.exe.text+2700D8
+TITAN.exe.text+1AA76D: 52                             - push edx
+TITAN.exe.text+1AA76E: 85 C0                          - test eax,eax
+TITAN.exe.text+1AA770: 0F 84 E9 FB FF FF              - je TITAN.exe.text+1AA35F
+TITAN.exe.text+1AA776: E9 7C FC FF FF                 - jmp TITAN.exe.text+1AA3F7
+TITAN.exe.text+1AA77B: 90                             - nop 
+TITAN.exe.text+1AA77C: C6 44 24 30 00                 - mov byte ptr [esp+30],00
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>15</ID>
+              <Description>"No Camera Zoom When Firing"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-04
+	Author	: aSwedishMagyar
+}
+[ENABLE]
+aobscanmodule(cameraFix,TITAN.exe,d9 05 ? ? ? ? d8 8b ? ? ? ? d8 05)
+registersymbol(cameraFix)
+registersymbol(zeroVal)
+alloc(zeroVal,10,cameraFix)
+
+zeroVal:
+  dd 0
+  readmem(cameraFix,6)
+cameraFix:
+  fld dword ptr [zeroVal]
+
+[DISABLE]
+cameraFix:
+  readmem(zeroVal+4,6)
+
+unregistersymbol(cameraFix)
+unregistersymbol(zeroVal)
+dealloc(zeroVal)
+
+{
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+1A5E00
+
+TITAN.exe.text+1A5DC6: DC C1              - fadd st(1),st(0)
+TITAN.exe.text+1A5DC8: D9 C9              - fxch st(1)
+TITAN.exe.text+1A5DCA: 8B 83 9C 00 00 00  - mov eax,[ebx+0000009C]
+TITAN.exe.text+1A5DD0: D8 40 28           - fadd dword ptr [eax+28]
+TITAN.exe.text+1A5DD3: D9 5C 24 04        - fstp dword ptr [esp+04]
+TITAN.exe.text+1A5DD7: D9 CB              - fxch st(3)
+TITAN.exe.text+1A5DD9: DE C9              - fmulp st(1),st(0)
+TITAN.exe.text+1A5DDB: DE C9              - fmulp st(1),st(0)
+TITAN.exe.text+1A5DDD: D8 83 94 00 00 00  - fadd dword ptr [ebx+00000094]
+TITAN.exe.text+1A5DE3: DE C1              - faddp 
+TITAN.exe.text+1A5DE5: D9 1C 24           - fstp dword ptr [esp]
+TITAN.exe.text+1A5DE8: 8B 0D 60 66 71 00  - mov ecx,[TITAN.exe+316660]
+TITAN.exe.text+1A5DEE: E8 65 3C 05 00     - call TITAN.exe.text+1F9A58
+TITAN.exe.text+1A5DF3: 83 EC 08           - sub esp,08
+TITAN.exe.text+1A5DF6: 83 C4 50           - add esp,50
+TITAN.exe.text+1A5DF9: 5B                 - pop ebx
+TITAN.exe.text+1A5DFA: 5E                 - pop esi
+TITAN.exe.text+1A5DFB: 5F                 - pop edi
+TITAN.exe.text+1A5DFC: C3                 - ret 
+TITAN.exe.text+1A5DFD: 8D 76 00           - lea esi,[esi+00]
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+1A5E00: D9 05 CC 29 6F 00  - fld dword ptr [TITAN.exe.rdata+119CC]
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+1A5E06: D8 8B C4 03 00 00  - fmul dword ptr [ebx+000003C4]
+TITAN.exe.text+1A5E0C: D8 05 B8 29 6F 00  - fadd dword ptr [TITAN.exe.rdata+119B8]
+TITAN.exe.text+1A5E12: DD 05 D0 29 6F 00  - fld qword ptr [TITAN.exe.rdata+119D0]
+TITAN.exe.text+1A5E18: D8 8B 94 03 00 00  - fmul dword ptr [ebx+00000394]
+TITAN.exe.text+1A5E1E: DE C1              - faddp 
+TITAN.exe.text+1A5E20: D8 83 1C 03 00 00  - fadd dword ptr [ebx+0000031C]
+TITAN.exe.text+1A5E26: D9 1C 24           - fstp dword ptr [esp]
+TITAN.exe.text+1A5E29: D9 C9              - fxch st(1)
+TITAN.exe.text+1A5E2B: D9 5C 24 20        - fstp dword ptr [esp+20]
+TITAN.exe.text+1A5E2F: D9 5C 24 10        - fstp dword ptr [esp+10]
+TITAN.exe.text+1A5E33: E8 A4 88 04 00     - call TITAN.exe.text+1EE6DC
+TITAN.exe.text+1A5E38: D9 44 24 10        - fld dword ptr [esp+10]
+TITAN.exe.text+1A5E3C: D9 44 24 20        - fld dword ptr [esp+20]
+TITAN.exe.text+1A5E40: D9 C9              - fxch st(1)
+TITAN.exe.text+1A5E42: E9 FF FD FF FF     - jmp TITAN.exe.text+1A5C46
+TITAN.exe.text+1A5E47: 90                 - nop 
+TITAN.exe.text+1A5E48: DD E0              - fucom st(0)
+TITAN.exe.text+1A5E4A: DF E0              - fnstsw ax
+TITAN.exe.text+1A5E4C: 80 E4 45           - and ah,45
+TITAN.exe.text+1A5E4F: 80 FC 40           - cmp ah,40
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>37</ID>
+              <Description>"Lock Camera on Player"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-05
+	Author	: aSwedishMagyar
+}
+[ENABLE]
+aobscanmodule(lockCamera,TITAN.exe,8B 44 24 18 8B 54 24 1C 89 03 89 53 04 83 C3 08 89 99 C4)
+registersymbol(lockCamera)
+alloc(newlockCamera,100,lockCamera)
+label(codelockCamera)
+label(returnlockCamera)
+
+newlockCamera:
+  push ebx
+  mov ebx,baseCoords
+  mov ebx,[ebx]
+  mov eax,[ebx+94]
+  mov edx,[ebx+98]
+  pop ebx
+codelockCamera:
+  jmp returnlockCamera
+
+lockCamera:
+  jmp newlockCamera
+  nop 3
+returnlockCamera:
+
+[DISABLE]
+lockCamera:
+  db 8B 44 24 18 8B 54 24 1C
+
+unregistersymbol(lockCamera)
+dealloc(newlockCamera)
+
+{
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+1F9A7E
+
+TITAN.exe.text+1F9A42: D9 1C 24           - fstp dword ptr [esp]
+TITAN.exe.text+1F9A45: 89 F1              - mov ecx,esi
+TITAN.exe.text+1F9A47: E8 D8 FE FF FF     - call TITAN.exe.text+1F9924
+TITAN.exe.text+1F9A4C: 83 EC 0C           - sub esp,0C
+TITAN.exe.text+1F9A4F: 83 C4 0C           - add esp,0C
+TITAN.exe.text+1F9A52: 5B                 - pop ebx
+TITAN.exe.text+1F9A53: 5E                 - pop esi
+TITAN.exe.text+1F9A54: C2 10 00           - ret 0010
+TITAN.exe.text+1F9A57: 90                 - nop 
+TITAN.exe.text+1F9A58: 53                 - push ebx
+TITAN.exe.text+1F9A59: 83 EC 28           - sub esp,28
+TITAN.exe.text+1F9A5C: D9 44 24 30        - fld dword ptr [esp+30]
+TITAN.exe.text+1F9A60: D9 5C 24 18        - fstp dword ptr [esp+18]
+TITAN.exe.text+1F9A64: D9 44 24 34        - fld dword ptr [esp+34]
+TITAN.exe.text+1F9A68: D9 5C 24 1C        - fstp dword ptr [esp+1C]
+TITAN.exe.text+1F9A6C: 8B 99 C4 00 00 00  - mov ebx,[ecx+000000C4]
+TITAN.exe.text+1F9A72: 3B 99 C8 00 00 00  - cmp ebx,[ecx+000000C8]
+TITAN.exe.text+1F9A78: 74 22              - je TITAN.exe.text+1F9A9C
+TITAN.exe.text+1F9A7A: 85 DB              - test ebx,ebx
+TITAN.exe.text+1F9A7C: 74 0D              - je TITAN.exe.text+1F9A8B
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+1F9A7E: 8B 44 24 18        - mov eax,[esp+18]
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+1F9A82: 8B 54 24 1C        - mov edx,[esp+1C]
+TITAN.exe.text+1F9A86: 89 03              - mov [ebx],eax
+TITAN.exe.text+1F9A88: 89 53 04           - mov [ebx+04],edx
+TITAN.exe.text+1F9A8B: 83 C3 08           - add ebx,08
+TITAN.exe.text+1F9A8E: 89 99 C4 00 00 00  - mov [ecx+000000C4],ebx
+TITAN.exe.text+1F9A94: 83 C4 28           - add esp,28
+TITAN.exe.text+1F9A97: 5B                 - pop ebx
+TITAN.exe.text+1F9A98: C2 08 00           - ret 0008
+TITAN.exe.text+1F9A9B: 90                 - nop 
+TITAN.exe.text+1F9A9C: 81 C1 C0 00 00 00  - add ecx,000000C0
+TITAN.exe.text+1F9AA2: 8D 44 24 18        - lea eax,[esp+18]
+TITAN.exe.text+1F9AA6: 89 44 24 04        - mov [esp+04],eax
+TITAN.exe.text+1F9AAA: 89 1C 24           - mov [esp],ebx
+TITAN.exe.text+1F9AAD: E8 86 CC 0B 00     - call TITAN.exe.text+2B6738
+TITAN.exe.text+1F9AB2: 83 EC 08           - sub esp,08
+TITAN.exe.text+1F9AB5: EB DD              - jmp TITAN.exe.text+1F9A94
+TITAN.exe.text+1F9AB7: 90                 - nop 
+TITAN.exe.text+1F9AB8: 8B 41 08           - mov eax,[ecx+08]
+TITAN.exe.text+1F9ABB: 85 C0              - test eax,eax
+TITAN.exe.text+1F9ABD: 74 75              - je TITAN.exe.text+1F9B34
+}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>21</ID>
+              <Description>"Walk Through Walls"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{
+	Game	: TITAN.exe
+	Version	: 
+	Date	: 2021-02-04
+	Author	: aSwedishMagyar
+}
+[ENABLE]
+aobscanmodule(noCollisionX,TITAN.exe,8b 44 24 14 85 c0 0f 84 ? ? ? ? dd 05 ? ? ? ? d8 6c 24 ? d9 5c 24 ? ff 4c 24 ? 0f 84 ? ? ? ? 8b 4c 24 ? d9 81 ? ? ? ? d9 5c 24 ? d9 44 24 ? d8 4c 24)
+registersymbol(noCollisionX)
+aobscanmodule(noCollisionY,TITAN.exe,8b 4c 24 14 85 c9 0f 84 ? ? ? ? dd 05)
+registersymbol(noCollisionY)
+noCollisionX:
+  xor eax,eax
+  nop 2
+noCollisionY:
+  xor eax,eax
+  nop 2
+[DISABLE]
+noCollisionX:
+  db 8B 44 24 14
+noCollisionY:
+  db 8B 4C 24 14
+unregistersymbol(noCollisionX)
+unregistersymbol(noCollisionY)
+{
+// ORIGINAL CODE - INJECTION POINT: TITAN.exe.text+1B84C5
+
+TITAN.exe.text+1B847C: 0F 84 5E 01 00 00        - je TITAN.exe.text+1B85E0
+TITAN.exe.text+1B8482: 8B 4C 24 18              - mov ecx,[esp+18]
+TITAN.exe.text+1B8486: 8B 01                    - mov eax,[ecx]
+TITAN.exe.text+1B8488: D9 44 24 24              - fld dword ptr [esp+24]
+TITAN.exe.text+1B848C: D9 1C 24                 - fstp dword ptr [esp]
+TITAN.exe.text+1B848F: 8B 40 34                 - mov eax,[eax+34]
+TITAN.exe.text+1B8492: C7 44 24 2C FF FF FF FF  - mov [esp+2C],FFFFFFFF
+TITAN.exe.text+1B849A: FF D0                    - call eax
+TITAN.exe.text+1B849C: 50                       - push eax
+TITAN.exe.text+1B849D: C7 44 24 20 14 00 00 00  - mov [esp+20],00000014
+TITAN.exe.text+1B84A5: D9 E8                    - fld1 
+TITAN.exe.text+1B84A7: D9 5C 24 1C              - fstp dword ptr [esp+1C]
+TITAN.exe.text+1B84AB: EB 3C                    - jmp TITAN.exe.text+1B84E9
+TITAN.exe.text+1B84AD: 8D 76 00                 - lea esi,[esi+00]
+TITAN.exe.text+1B84B0: 8B 4C 24 10              - mov ecx,[esp+10]
+TITAN.exe.text+1B84B4: 8B 41 FC                 - mov eax,[ecx-04]
+TITAN.exe.text+1B84B7: 8D 50 FF                 - lea edx,[eax-01]
+TITAN.exe.text+1B84BA: 89 51 FC                 - mov [ecx-04],edx
+TITAN.exe.text+1B84BD: 85 C0                    - test eax,eax
+TITAN.exe.text+1B84BF: 0F 8E C2 00 00 00        - jng TITAN.exe.text+1B8587
+// ---------- INJECTING HERE ----------
+TITAN.exe.text+1B84C5: 8B 44 24 14              - mov eax,[esp+14]
+// ---------- DONE INJECTING  ----------
+TITAN.exe.text+1B84C9: 85 C0                    - test eax,eax
+TITAN.exe.text+1B84CB: 0F 84 D7 00 00 00        - je TITAN.exe.text+1B85A8
+TITAN.exe.text+1B84D1: DD 05 10 31 6F 00        - fld qword ptr [TITAN.exe.rdata+12110]
+TITAN.exe.text+1B84D7: D8 6C 24 1C              - fsubr dword ptr [esp+1C]
+TITAN.exe.text+1B84DB: D9 5C 24 1C              - fstp dword ptr [esp+1C]
+TITAN.exe.text+1B84DF: FF 4C 24 20              - dec [esp+20]
+TITAN.exe.text+1B84E3: 0F 84 27 01 00 00        - je TITAN.exe.text+1B8610
+TITAN.exe.text+1B84E9: 8B 4C 24 18              - mov ecx,[esp+18]
+TITAN.exe.text+1B84ED: D9 81 98 00 00 00        - fld dword ptr [ecx+00000098]
+TITAN.exe.text+1B84F3: D9 5C 24 14              - fstp dword ptr [esp+14]
+TITAN.exe.text+1B84F7: D9 44 24 24              - fld dword ptr [esp+24]
+TITAN.exe.text+1B84FB: D8 4C 24 1C              - fmul dword ptr [esp+1C]
+TITAN.exe.text+1B84FF: D8 81 94 00 00 00        - fadd dword ptr [ecx+00000094]
+TITAN.exe.text+1B8505: D9 5C 24 10              - fstp dword ptr [esp+10]
+TITAN.exe.text+1B8509: 8B 84 24 80 00 00 00     - mov eax,[esp+00000080]
+TITAN.exe.text+1B8510: 89 04 24                 - mov [esp],eax
+TITAN.exe.text+1B8513: C7 44 24 2C FF FF FF FF  - mov [esp+2C],FFFFFFFF
+TITAN.exe.text+1B851B: 8D 4C 24 6C              - lea ecx,[esp+6C]
+TITAN.exe.text+1B851F: E8 60 0B 0E 00           - call TITAN.exe.text+299084
+TITAN.exe.text+1B8524: 50                       - push eax
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <CheatCodes>
+    <CodeEntry Color="20000000">
+      <Description>Change of call dword ptr [eax+4C]</Description>
+      <AddressString>TITAN.exe+1B0F63</AddressString>
+      <Before>
+        <Byte>4C</Byte>
+        <Byte>24</Byte>
+        <Byte>30</Byte>
+        <Byte>8B</Byte>
+        <Byte>01</Byte>
+      </Before>
+      <Actual>
+        <Byte>FF</Byte>
+        <Byte>50</Byte>
+        <Byte>4C</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>4C</Byte>
+        <Byte>24</Byte>
+        <Byte>30</Byte>
+        <Byte>80</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry Color="20000000">
+      <Description>Change of jne TITAN.exe+1AE9F0</Description>
+      <AddressString>TITAN.exe+1ADD67</AddressString>
+      <Before>
+        <Byte>6B</Byte>
+        <Byte>71</Byte>
+        <Byte>00</Byte>
+        <Byte>85</Byte>
+        <Byte>C0</Byte>
+      </Before>
+      <Actual>
+        <Byte>0F</Byte>
+        <Byte>85</Byte>
+        <Byte>83</Byte>
+        <Byte>0C</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>54</Byte>
+        <Byte>24</Byte>
+        <Byte>18</Byte>
+        <Byte>8B</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry Color="80000008">
+      <Description>Change of je TITAN.exe+1F4114</Description>
+      <AddressString>TITAN.exe+1F412F</AddressString>
+      <Before>
+        <Byte>1C</Byte>
+        <Byte>80</Byte>
+        <Byte>78</Byte>
+        <Byte>15</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>74</Byte>
+        <Byte>E3</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>4C</Byte>
+        <Byte>24</Byte>
+        <Byte>20</Byte>
+        <Byte>39</Byte>
+      </After>
+    </CodeEntry>
+  </CheatCodes>
+  <UserdefinedSymbols/>
+</CheatTable>

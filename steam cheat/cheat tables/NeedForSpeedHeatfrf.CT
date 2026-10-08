@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>3</ID>
+      <Description>"Unlimited Nitro"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+
+
+aobscanmodule(nitro_aob,NeedForSpeedHeat.exe,F3 0F 10 8B 20 04 00 00 F3 0F 11 83)
+alloc(newmem,$1000,nitro_aob)
+
+label(code)
+label(return)
+
+newmem:
+cmp [rbx+00000418],0
+je @f
+mov [rbx+00000420],(float)1
+movss xmm0,[rbx+00000420]
+code:
+movss xmm1,[rbx+00000420]
+jmp return
+
+nitro_aob:
+jmp newmem
+nop
+nop
+nop
+return:
+registersymbol(nitro_aob)
+
+[DISABLE]
+
+nitro_aob:
+db F3 0F 10 8B 20 04 00 00
+
+unregistersymbol(nitro_aob)
+dealloc(newmem)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>16273</ID>
+      <Description>"More CHEATS AVAILABLE HERE"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$LUA}
+  if syntaxcheck then return end
+  [ENABLE]
+
+--Updated table! (Start)
+    --messageDialog('Enable Dark Mode?', mtInformation,mbYes,mbNo)
+    if messageDialog("Updated table with more cheats available!\r\n\r\nYou will need Mod Engine to get more cheats and the new updated table\r\n\r\nDownload Mod Engine?", mtConfirmation, mbYes, mbNo) ==mrYes then
+       shellExecute("https://modengine.net")
+    else
+    end
+--Updated table! (End)
+  [DISABLE]
+
+</AssemblerScript>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <LuaScript>--Updated table! (Start)
+    --messageDialog('Enable Dark Mode?', mtInformation,mbYes,mbNo)
+    if messageDialog("Updated table with more cheats available!\r\n\r\nYou will need Mod Engine to get more cheats and the new updated table\r\n\r\nDownload Mod Engine?", mtConfirmation, mbYes, mbNo) ==mrYes then
+       shellExecute("https://modengine.net")
+    else
+    end
+--Updated table! (End)
+
+
+</LuaScript>
+</CheatTable>

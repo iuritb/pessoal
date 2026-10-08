@@ -1,0 +1,2205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="34">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>1369</ID>
+      <Description>"ACTIVE_CHEAT_TABLE"</Description>
+      <Options moHideChildren="1" moDeactivateChildrenAsWell="1"/>
+      <LastState Activated="1"/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+{$lua}
+LaunchMonoDataCollector()
+{$asm}
+LuaCall(function cycleFullCompact(sender,force) local state = not(compactmenuitem.Caption == 'Compact View Mode'); if force~=nil then state = not force end; compactmenuitem.Caption = state and 'Compact View Mode' or 'Full View Mode'; getMainForm().Splitter1.Visible = state; getMainForm().Panel4.Visible    = state; getMainForm().Panel5.Visible    = state; end; function addCompactMenu() if compactmenualreadyexists then return end; local parent = getMainForm().Menu.Items; compactmenuitem = createMenuItem(parent); parent.add(compactmenuitem); compactmenuitem.Caption = 'Compact View Mode'; compactmenuitem.OnClick = cycleFullCompact; compactmenualreadyexists = 'yes'; end; addCompactMenu(); cycleFullCompact(nil,true))
+
+[DISABLE]
+LuaCall(cycleFullCompact(nil,false))
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>1370</ID>
+          <Description>"SET_MAX_STATS"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//Stat:ChangeValue+63
+aobscanregion(maxStats,Stat:ChangeValue,Stat:ChangeValue+80,F30F116E)
+alloc(newmem,$1000,maxStats)
+
+label(code)
+label(return)
+
+newmem:
+  cmp [rsi+28],(float)0  // 0 health regen for the shark
+                         //If it does not work, just restart the game.
+  je code
+  movss [rsi+1C],xmm2  // xmm2 has maxValue
+  jmp return
+
+code:
+  movss [rsi+1C],xmm5
+  jmp return
+
+maxStats:
+  jmp newmem
+return:
+registersymbol(maxStats)
+
+[DISABLE]
+maxStats:
+  db F3 0F 11 6E 1C
+
+unregistersymbol(maxStats)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: 06F86733
+
+06F86708: F3 0F 5A D2                    -  cvtss2sd xmm2,xmm2
+06F8670C: F2 0F 5A D2                    -  cvtsd2ss xmm2,xmm2
+06F86710: F2 0F 5A C9                    -  cvtsd2ss xmm1,xmm1
+06F86714: F2 0F 5A C0                    -  cvtsd2ss xmm0,xmm0
+06F86718: 48 8D 64 24 00                 -  lea rsp,[rsp+00]
+06F8671D: 90                             -  nop
+06F8671E: 49 BB C0 89 56 05 00 00 00 00  -  mov r11,00000000055689C0
+06F86728: 41 FF D3                       -  call r11
+06F8672B: F3 0F 5A C0                    -  cvtss2sd xmm0,xmm0
+06F8672F: F2 0F 5A E8                    -  cvtsd2ss xmm5,xmm0
+// ---------- INJECTING HERE ----------
+06F86733: F3 0F 11 6E 1C                 -  movss [rsi+1C],xmm5
+// ---------- DONE INJECTING  ----------
+06F86738: 48 8B 75 F8                    -  mov rsi,[rbp-08]
+06F8673C: 48 8D 65 00                    -  lea rsp,[rbp+00]
+06F86740: 5D                             -  pop rbp
+06F86741: C3                             -  ret
+06F86742: 00 00                          -  add [rax],al
+06F86744: 00 00                          -  add [rax],al
+06F86746: 00 00                          -  add [rax],al
+06F86748: 01 04 02                       -  add [rdx+rax],eax
+06F8674B: 05 04 03 01 50                 -  add eax,50010304
+06F86750: 00 00                          -  add [rax],al
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1371</ID>
+          <Description>"NO_CRAFT_REQUIREMENT"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+CostCollection:MeetsRequirements: // Crafting in Inventory
+  ret
+
+CostMultiple:HasEnoughInInventory: // Crafting when building
+  ret
+ 
+[DISABLE]
+CostCollection:MeetsRequirements:
+  push rbp
+
+CostMultiple:HasEnoughInInventory:
+  push rbp
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1372</ID>
+          <Description>"INSTANT_FISHING"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//Bobber:StartBobbing+3f
+aobscanregion(fastFishing,Bobber:StartBobbing,Bobber:StartBobbing+bf,C6466200)
+
+fastFishing+02:
+  db 61 01
+//C6 46 61 01
+//mov byte ptr [rsi+61],01 { 1 }   //fishIsOnHook (type: SystemBoolean)
+registersymbol(fastFishing)
+ 
+[DISABLE]
+fastFishing+02:
+  db 62 00
+//C6 46 32 00
+//mov byte ptr [rsi+62],00 { 0 }   //fishEscaped (type: SystemBoolean)
+unregistersymbol(fastFishing)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Bobber:StartBobbing+3f
+
+0903FA73: 85 C0                          -  test eax,eax
+0903FA75: 0F 85 A0 00 00 00              -  jne 0903FB1B
+0903FA7B: 48 8B 46 58                    -  mov rax,[rsi+58]
+0903FA7F: 48 8B 40 50                    -  mov rax,[rax+50]
+0903FA83: 48 8B C8                       -  mov rcx,rax
+0903FA86: BA 01 00 00 00                 -  mov edx,00000001
+0903FA8B: 83 38 00                       -  cmp dword ptr [rax],00
+0903FA8E: 49 BB B0 5F DE 05 00 00 00 00  -  mov r11,UnityEngine:Rigidbody:set_isKinematic
+0903FA98: 41 FF D3                       -  call r11
+0903FA9B: C6 46 60 01                    -  mov byte ptr [rsi+60],01
+// ---------- INJECTING HERE ----------
+0903FA9F: C6 46 62 00                    -  mov byte ptr [rsi+62],00
+0903FAA3: 48 8B 46 28                    -  mov rax,[rsi+28]
+// ---------- DONE INJECTING  ----------
+0903FAA7: 48 8B C8                       -  mov rcx,rax
+0903FAAA: 48 8B 00                       -  mov rax,[rax]
+0903FAAD: FF 50 78                       -  call qword ptr [rax+78]
+0903FAB0: F3 0F 5A C0                    -  cvtss2sd xmm0,xmm0
+0903FAB4: 48 8B CE                       -  mov rcx,rsi
+0903FAB7: F2 0F 10 C8                    -  movsd xmm1,xmm0
+0903FABB: F2 0F 5A C9                    -  cvtsd2ss xmm1,xmm1
+0903FABF: 48 8D AD 00 00 00 00           -  lea rbp,[rbp+00000000]
+0903FAC6: 49 BB 40 FB 03 09 00 00 00 00  -  mov r11,Bobber:FishOnHook
+0903FAD0: 41 FF D3                       -  call r11
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1373</ID>
+          <Description>"INSTANT_COOKING"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+alloc(originbytes,6)
+registersymbol(originbytes)
+//CookingSlot:UpdateSlot+c2
+aobscanregion(fastCooking,CookingSlot:UpdateSlot,CookingSlot:UpdateSlot+110,0F87)
+registersymbol(fastCooking)
+
+originbytes:
+  readmem(fastCooking,6)
+
+fastCooking:
+  db 90 90 90 90 90 90
+
+registersymbol(fastCooking)
+
+[DISABLE]
+fastCooking:
+  readmem(originbytes,6)
+//db 0F 87 31 00 00 00
+//ja CookingSlot:UpdateSlot+f9
+
+unregistersymbol(originbytes)
+unregistersymbol(fastCooking)
+dealloc(originbytes)
+
+{
+// ORIGINAL CODE - INJECTION POINT: CookingSlot:UpdateSlot+c2
+
+09038F55: F3 0F 5A C9                    -  cvtss2sd xmm1,xmm1
+09038F59: F2 0F 5A E9                    -  cvtsd2ss xmm5,xmm1
+09038F5D: F3 0F 11 6D F4                 -  movss [rbp-0C],xmm5
+09038F62: F3 0F 10 4D F4                 -  movss xmm1,[rbp-0C]
+09038F67: F3 0F 5A C9                    -  cvtss2sd xmm1,xmm1
+09038F6B: F3 0F 10 56 48                 -  movss xmm2,[rsi+48]
+09038F70: F3 0F 5A D2                    -  cvtss2sd xmm2,xmm2
+09038F74: F2 0F 59 CA                    -  mulsd xmm1,xmm2
+09038F78: 66 0F 2F C8                    -  comisd xmm1,xmm0
+09038F7C: 0F 8A 37 00 00 00              -  jp CookingSlot:UpdateSlot+f9
+// ---------- INJECTING HERE ----------
+09038F82: 0F 87 31 00 00 00              -  ja CookingSlot:UpdateSlot+f9
+// ---------- DONE INJECTING  ----------
+09038F88: 48 8B CE                       -  mov rcx,rsi
+09038F8B: 66 66 90                       -  nop
+09038F8E: 49 BB 70 93 03 09 00 00 00 00  -  mov r11,ookingSlot:OnComplete
+09038F98: 41 FF D3                       -  call r11
+09038F9B: 48 8B 46 18                    -  mov rax,[rsi+18]
+09038F9F: 48 85 C0                       -  test rax,rax
+09038FA2: 74 15                          -  je CookingSlot:UpdateSlot+f9
+09038FA4: 48 8B 46 18                    -  mov rax,[rsi+18]
+09038FA8: 48 8B C8                       -  mov rcx,rax
+09038FAB: 48 8B D6                       -  mov rdx,rsi
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1374</ID>
+          <Description>"INF_HOTSLOT_ITEM_DURABILITY"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+PlayerInventory:RemoveDurabillityFromHotSlot:
+   ret
+
+[DISABLE]
+PlayerInventory:RemoveDurabillityFromHotSlot:
+   push rbp
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1532</ID>
+          <Description>"PERSON_CONTROLLER"</Description>
+          <Options moHideChildren="1"/>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Raft
+  Version: Update 12
+  Date   : 2020-10-08
+  Author : Fantomas
+}
+
+[ENABLE]
+//PersonController:GroundControll+173
+aobscanregion(personController,PersonController:GroundControll,PersonController:GroundControll+2000,0FB6)
+alloc(newmem,$1000,personController)
+alloc(personController_ptr,8)
+
+label(code)
+label(return)
+label(personControllerBkp)
+
+newmem:
+personControllerBkp:
+  readmem(personController,7)
+
+code:
+  mov [personController_ptr],rsi
+  db 0F B6
+  readmem(personController+02,5)
+  //movzx eax,byte ptr [rsi+00000198] //0x198 - climbing
+  jmp return
+
+personController:
+  jmp code
+  nop 2
+return:
+registersymbol(personController)
+registersymbol(personController_ptr)
+registersymbol(personControllerBkp)
+
+[DISABLE]
+personController:
+  readmem(personControllerBkp,7)
+
+unregistersymbol(personController)
+unregistersymbol(personController_ptr)
+unregistersymbol(personControllerBkp)
+
+dealloc(newmem)
+dealloc(personController_ptr)
+
+{
+// ORIGINAL CODE - INJECTION POINT: PersonController:GroundControll+173
+
+1F888293B81: 4C 89 85 40 FA FF FF           -  mov [rbp-000005C0],r8
+1F888293B88: 48 63 52 28                    -  movsxd  rdx,dword ptr [rdx+28]
+1F888293B8C: 89 95 48 FA FF FF              -  mov [rbp-000005B8],edx
+1F888293B92: 48 8D 10                       -  lea rdx,[rax]
+1F888293B95: 90                             -  nop
+1F888293B96: 49 BB 50 5D 29 88 F8 01 00 00  -  mov r11,000001F888295D50
+1F888293BA0: 41 FF D3                       -  call r11
+1F888293BA3: 48 8B CE                       -  mov rcx,rsi
+1F888293BA6: 49 BB A0 65 29 88 F8 01 00 00  -  mov r11,000001F8882965A0
+1F888293BB0: 41 FF D3                       -  call r11
+// ---------- INJECTING HERE ----------
+1F888293BB3: 0F B6 86 98 01 00 00           -  movzx eax,byte ptr [rsi+00000198]
+// ---------- DONE INJECTING  ----------
+1F888293BBA: 85 C0                          -  test eax,eax
+1F888293BBC: 0F 84 24 00 00 00              -  je 1F888293BE6
+1F888293BC2: 48 8B 8E 80 00 00 00           -  mov rcx,[rsi+00000080]
+1F888293BC9: 33 D2                          -  xor edx,edx
+1F888293BCB: 66 66 90                       -  nop 3
+1F888293BCE: 49 BB 4A 08 E6 53 FA 01 00 00  -  mov r11,000001FA53E6084A
+1F888293BD8: 41 FF D3                       -  call r11
+1F888293BDB: 85 C0                          -  test eax,eax
+1F888293BDD: 74 07                          -  je 1F888293BE6
+1F888293BDF: C6 86 98 01 00 00 00           -  mov byte ptr [rsi+00000198],00
+}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1533</ID>
+              <Description>"Base Address"</Description>
+              <LastState RealAddress="00000000"/>
+              <VariableType>String</VariableType>
+              <Length>0</Length>
+              <Unicode>0</Unicode>
+              <CodePage>0</CodePage>
+              <ZeroTerminate>1</ZeroTerminate>
+              <Address>personController_ptr</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>1534</ID>
+                  <Description>"submersionState"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+A8</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1535</ID>
+                  <Description>"normalSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+AC</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1536</ID>
+                  <Description>"sprintSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+B0</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1537</ID>
+                  <Description>"swimSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+B4</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1538</ID>
+                  <Description>"gravity"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+B8</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1539</ID>
+                  <Description>"stopGravitySpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+BC</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1540</ID>
+                  <Description>"jumpSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+E8</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1541</ID>
+                  <Description>"jumpCooldown"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+EC</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1542</ID>
+                  <Description>"crouchSpeed"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+F4</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1543</ID>
+                  <Description>"crouchHeight"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+F8</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1387</ID>
+          <Description>"HOOK"</Description>
+          <Options moHideChildren="1"/>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//Hook:Update+b8
+aobscanregion(hook,Hook:Update,Hook:Update+cff,488B46)
+alloc(newmem,$1000,hook)
+alloc(hook_ptr,8)
+
+label(code)
+label(return)
+
+newmem:
+  mov [hook_ptr],rsi
+
+code:
+  mov rax,[rsi+78] //0x78 - playerNetwork
+  mov rcx,rax
+  jmp return
+
+hook:
+  jmp newmem
+  nop 2
+return:
+registersymbol(hook)
+registersymbol(hook_ptr)
+
+[DISABLE]
+hook:
+  db 48 8B 46 78 48 8B C8
+
+unregistersymbol(hook)
+unregistersymbol(hook_ptr)
+dealloc(hook_ptr)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Hook:Update+b8
+
+1F88827E813: 00 C7                          -  add bh,al
+1F88827E815: 85 5C FB FF                    -  test [rbx+rdi*8-01],ebx
+1F88827E819: FF 00                          -  inc [rax]
+1F88827E81B: 00 00                          -  add [rax],al
+1F88827E81D: 00 C7                          -  add bh,al
+1F88827E81F: 85 60 FB                       -  test [rax-05],esp
+1F88827E822: FF                             -  db -01
+1F88827E823: FF 00                          -  inc [rax]
+1F88827E825: 00 00                          -  add [rax],al
+1F88827E827: 00 48                          - db 00 48  // SHORTENED TO HIT INJECTION FROM:  add [rax-75],cl
+// ---------- INJECTING HERE ----------
+1F88827E829: 8B 46 78                       -  mov eax,[rsi+78]
+1F88827E82C: 48 8B C8                       -  mov rcx,rax
+// ---------- DONE INJECTING  ----------
+1F88827E82F: 83 39 00                       -  cmp dword ptr [rcx],00
+1F88827E832: 0F B6 80 E8 01 00 00           -  movzx eax,byte ptr [rax+000001E8]
+1F88827E839: 85 C0                          -  test eax,eax
+1F88827E83B: 0F 85 E7 05 00 00              -  jne 1F88827EE28
+1F88827E841: 48 8B 46 28                    -  mov rax,[rsi+28]
+1F88827E845: 48 8B C8                       -  mov rcx,rax
+1F88827E848: 83 39 00                       -  cmp dword ptr [rcx],00
+1F88827E84B: 0F B6 80 B8 00 00 00           -  movzx eax,byte ptr [rax+000000B8]
+1F88827E852: 85 C0                          -  test eax,eax
+1F88827E854: 75 25                          -  jne 1F88827E87B
+}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1388</ID>
+              <Description>"Base Address"</Description>
+              <LastState RealAddress="00000000"/>
+              <VariableType>String</VariableType>
+              <Length>0</Length>
+              <Unicode>0</Unicode>
+              <CodePage>0</CodePage>
+              <ZeroTerminate>1</ZeroTerminate>
+              <Address>hook_ptr</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>1389</ID>
+                  <Description>"pullSpeed"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+98</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1390</ID>
+                  <Description>"gatherTime"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+9C</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1391</ID>
+                  <Description>"gatherTimer"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+A0</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1392</ID>
+          <Description>"UNLOCK_ALL_ITEMS"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//RecipeMenuItem:AttachRecipes+289
+aobscanregion(recipeItemAttached,RecipeMenuItem:AttachRecipes,RecipeMenuItem:AttachRecipes+700,85C075)
+//RecipeItem:HasLearned+68
+aobscanregion(recipeItemLearned,RecipeItem:HasLearned,RecipeItem:HasLearned+cf,85C0)
+
+recipeItemAttached:
+  db 90 90
+registersymbol(recipeItemAttached)
+
+recipeItemLearned:
+  db 90 90
+registersymbol(recipeItemLearned)
+
+[DISABLE]
+recipeItemAttached:
+  db 85 C0
+//test eax,eax
+unregistersymbol(recipeItemAttached)
+
+recipeItemLearned:
+  db 85 C0
+//test eax,eax
+unregistersymbol(recipeItemLearned)
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1393</ID>
+          <Description>"UNLIMITED ITEMS"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//Inventory:GetItemCount+d1
+aobscanregion(unlimitedItems,Inventory:GetItemCount,Inventory:GetItemCount+150,4863)
+alloc(newmem,$1000,unlimitedItems)
+
+label(code)
+label(return)
+
+newmem:
+  mov [rax+60],#10  //pur here the value you want!!!
+code:
+  movsxd  rax,dword ptr [rax+60]
+  add r15d,eax
+  jmp return
+
+unlimitedItems:
+  jmp newmem
+  nop 2
+return:
+registersymbol(unlimitedItems)
+
+[DISABLE]
+unlimitedItems:
+  db 48 63 40 60 44 03 F8
+
+unregistersymbol(unlimitedItems)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Inventory:GetItemCount+d1
+
+0BD9A37D: 48 8B 48 18                    -  mov rcx,[rax+18]
+0BD9A381: 48 8B D6                       -  mov rdx,rsi
+0BD9A384: 66 90                          -  nop
+0BD9A386: 49 BB B0 F7 3A 05 00 00 00 00  -  mov r11,00000000053AF7B0
+0BD9A390: 41 FF D3                       -  call r11
+0BD9A393: 85 C0                          -  test eax,eax
+0BD9A395: 74 11                          -  je 0BD9A3A8
+0BD9A397: 49 8B 46 18                    -  mov rax,[r14+18]
+0BD9A39B: 48 8B C8                       -  mov rcx,rax
+0BD9A39E: 83 39 00                       -  cmp dword ptr [rcx],00
+// ---------- INJECTING HERE ----------
+0BD9A3A1: 48 63 40 60                    -  movsxd  rax,dword ptr [rax+60]
+0BD9A3A5: 44 03 F8                       -  add r15d,eax
+// ---------- DONE INJECTING  ----------
+0BD9A3A8: 48 8B CD                       -  mov rcx,rbp
+0BD9A3AB: 48 83 C1 B8                    -  add rcx,-48
+0BD9A3AF: 41 BA 60 9A 30 62              -  mov r10d,62309A60
+0BD9A3B5: 90                             -  nop
+0BD9A3B6: 49 BB D0 35 3B 05 00 00 00 00  -  mov r11,00000000053B35D0
+0BD9A3C0: 41 FF D3                       -  call r11
+0BD9A3C3: 85 C0                          -  test eax,eax
+0BD9A3C5: 75 89                          -  jne 0BD9A350
+0BD9A3C7: 48 C7 45 B0 00 00 00 00        -  mov qword ptr [rbp-50],00000000
+0BD9A3CF: 48 83 EC 08                    -  sub rsp,08
+}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1394</ID>
+              <Description>"UNLIMITED ITEMS USES"</Description>
+              <LastState/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{ Game   : Raft
+  Version: Update 11
+  Date   : 2020-02-17
+  Author : Fantomas
+}
+
+[ENABLE]
+//Slot:IncrementUses+cd
+aobscanregion(infItemUses,Slot:IncrementUses,Slot:IncrementUses+280,FFCA)
+
+infItemUses+01:
+  db C2
+//FF C2
+//inc edx
+registersymbol(infItemUses)
+
+[DISABLE]
+infItemUses+01:
+  db CA
+//FF CA
+//dec edx
+unregistersymbol(infItemUses)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Slot:IncrementUses+cd
+
+1BDCBCE7319: 48 8B 47 18                    -  mov rax,[rdi+18]
+1BDCBCE731D: 48 8B C8                       -  mov rcx,rax
+1BDCBCE7320: 83 39 00                       -  cmp dword ptr [rcx],00
+1BDCBCE7323: 48 63 40 60                    -  movsxd  rax,dword ptr [rax+60]
+1BDCBCE7327: 85 C0                          -  test eax,eax
+1BDCBCE7329: 0F 8E 8C 01 00 00              -  jng 1BDCBCE74BB
+1BDCBCE732F: 48 8B 4F 18                    -  mov rcx,[rdi+18]
+1BDCBCE7333: 48 8B C1                       -  mov rax,rcx
+1BDCBCE7336: 83 39 00                       -  cmp dword ptr [rcx],00
+1BDCBCE7339: 48 63 51 60                    -  movsxd  rdx,dword ptr [rcx+60]
+// ---------- INJECTING HERE ----------
+1BDCBCE733D: FF CA                          -  dec edx
+1BDCBCE733F: 48 8B C8                       -  mov rcx,rax
+// ---------- DONE INJECTING  ----------
+1BDCBCE7342: 83 38 00                       -  cmp dword ptr [rax],00
+1BDCBCE7345: 90                             -  nop 
+1BDCBCE7346: 49 BB 20 3D B6 C3 BD 01 00 00  -  mov r11,000001BDC3B63D20
+1BDCBCE7350: 41 FF D3                       -  call r11
+1BDCBCE7353: 48 8B 47 18                    -  mov rax,[rdi+18]
+1BDCBCE7357: 48 8B C8                       -  mov rcx,rax
+1BDCBCE735A: 83 39 00                       -  cmp dword ptr [rcx],00
+1BDCBCE735D: 48 63 40 60                    -  movsxd  rax,dword ptr [rax+60]
+1BDCBCE7361: 83 F8 01                       -  cmp eax,01
+1BDCBCE7364: 0F 8C 62 00 00 00              -  jl 1BDCBCE73CC
+}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1395</ID>
+          <Description>"FAST KILL"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//Network_Entity:Damage+31
+aobscanregion(fastKill,Network_Entity:Damage,Network_Entity:Damage+100,F30F1041)
+alloc(newmem,$1000,fastKill)
+
+label(code)
+label(return)
+
+newmem:
+  cmp [rcx+28],0
+  jne code
+  mov [rcx+1C],(float)0
+  jmp return
+
+code:
+  movss xmm0,[rcx+1C]
+  jmp return
+
+fastKill:
+  jmp newmem
+return:
+registersymbol(fastKill)
+
+[DISABLE]
+fastKill:
+  db F3 0F 10 41 1C
+
+unregistersymbol(fastKill)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Network_Entity:Damage+31
+
+071F253B: 48 89 75 F0                    -  mov [rbp-10],rsi
+071F253F: 4C 89 7D F8                    -  mov [rbp-08],r15
+071F2543: 4C 8B F9                       -  mov r15,rcx
+071F2546: F3 0F 11 4D C0                 -  movss [rbp-40],xmm1
+071F254B: 4C 89 45 B8                    -  mov [rbp-48],r8
+071F254F: 4C 89 4D B0                    -  mov [rbp-50],r9
+071F2553: 48 8B 75 38                    -  mov rsi,[rbp+38]
+071F2557: 49 8B 4F 30                    -  mov rcx,[r15+30]
+071F255B: 48 8B C1                       -  mov rax,rcx
+071F255E: 83 39 00                       -  cmp dword ptr [rcx],00
+// ---------- INJECTING HERE ----------
+071F2561: F3 0F 10 41 1C                 -  movss xmm0,[rcx+1C]
+// ---------- DONE INJECTING  ----------
+071F2566: F3 0F 5A C0                    -  cvtss2sd xmm0,xmm0
+071F256A: F2 0F 5A E8                    -  cvtsd2ss xmm5,xmm0
+071F256E: F3 0F 11 6D EC                 -  movss [rbp-14],xmm5
+071F2573: F3 0F 10 45 EC                 -  movss xmm0,[rbp-14]
+071F2578: F3 0F 5A C0                    -  cvtss2sd xmm0,xmm0
+071F257C: F3 0F 10 4D C0                 -  movss xmm1,[rbp-40]
+071F2581: F3 0F 5A C9                    -  cvtss2sd xmm1,xmm1
+071F2585: F2 0F 5C C1                    -  subsd xmm0,xmm1
+071F2589: 48 8B C8                       -  mov rcx,rax
+071F258C: F2 0F 10 C8                    -  movsd xmm1,xmm0
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1396</ID>
+          <Description>"UNLIMITED CONSUMEABLE"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//ConsumeComponent:Update+be
+aobscanregion(unlimitedConsumeable,ConsumeComponent:Update,ConsumeComponent:Update+200,486347)
+alloc(newmem,$1000,unlimitedConsumeable)
+
+label(code)
+label(return)
+
+newmem:
+  mov [rdi+64],#10  //put here the value you want!!!
+
+code:
+  movsxd  rax,dword ptr [rdi+64]
+  test eax,eax
+  jmp return
+
+unlimitedConsumeable:
+  jmp newmem
+  nop
+return:
+registersymbol(unlimitedConsumeable)
+
+[DISABLE]
+unlimitedConsumeable:
+  db 48 63 47 64 85 C0
+
+unregistersymbol(unlimitedConsumeable)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: ConsumeComponent:Update+be
+
+0BDA3BC2: 48 8B 80 58 01 00 00           -  mov rax,[rax+00000158]
+0BDA3BC9: 48 8B C8                       -  mov rcx,rax
+0BDA3BCC: 83 38 00                       -  cmp dword ptr [rax],00
+0BDA3BCF: 48 8D AD 00 00 00 00           -  lea rbp,[rbp+00000000]
+0BDA3BD6: 49 BB 40 3D DA 0B 00 00 00 00  -  mov r11,000000000BDA3D40
+0BDA3BE0: 41 FF D3                       -  call r11
+0BDA3BE3: 48 8B F8                       -  mov rdi,rax
+0BDA3BE6: 48 85 C0                       -  test rax,rax
+0BDA3BE9: 74 0B                          -  je 0BDA3BF6
+0BDA3BEB: 83 3F 00                       -  cmp dword ptr [rdi],00
+// ---------- INJECTING HERE ----------
+0BDA3BEE: 48 63 47 64                    -  movsxd  rax,dword ptr [rdi+64]
+0BDA3BF2: 85 C0                          -  test eax,eax
+// ---------- DONE INJECTING  ----------
+0BDA3BF4: 7F 3A                          -  jg 0BDA3C30
+0BDA3BF6: 0F B6 46 20                    -  movzx eax,byte ptr [rsi+20]
+0BDA3BFA: 85 C0                          -  test eax,eax
+0BDA3BFC: 0F 84 15 01 00 00              -  je 0BDA3D17
+0BDA3C02: C6 46 20 00                    -  mov byte ptr [rsi+20],00
+0BDA3C06: 48 8B 46 18                    -  mov rax,[rsi+18]
+0BDA3C0A: 48 8B 80 A0 00 00 00           -  mov rax,[rax+000000A0]
+0BDA3C11: 48 8B 80 88 00 00 00           -  mov rax,[rax+00000088]
+0BDA3C18: 48 8B C8                       -  mov rcx,rax
+0BDA3C1B: 83 38 00                       -  cmp dword ptr [rax],00
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1397</ID>
+          <Description>"CLOCK"</Description>
+          <Options moHideChildren="1"/>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>//Game: Raft
+//Version: Update 10 [ Dec 03, 2019 ]
+
+[ENABLE]
+//Clock:GetTimeRotation+43
+aobscanregion(clock,Clock:GetTimeRotation,Clock:GetTimeRotation+100,F30F1040)
+alloc(newmem,$1000,clock)
+alloc(clock_ptr,8)
+registersymbol(clock)
+registersymbol(clock_ptr)
+
+label(code)
+label(return)
+
+newmem:
+  mov [clock_ptr],rax
+
+code:
+  movss xmm0,[rax+28]
+  jmp return
+
+clock:
+  jmp newmem
+return:
+
+[DISABLE]
+clock:
+  db F3 0F 10 40 28
+
+unregistersymbol(clock)
+unregistersymbol(clock_ptr)
+dealloc(clock_ptr)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Clock:GetTimeRotation+43
+
+064748C2: 48 8D 6D 00                    -  lea rbp,[rbp+00]
+064748C6: 49 BB 50 B1 57 05 00 00 00 00  -  mov r11,000000000557B150
+064748D0: 41 FF D3                       -  call r11
+064748D3: 85 C0                          -  test eax,eax
+064748D5: 74 0D                          -  je 064748E4
+064748D7: 66 0F 57 C0                    -  xorpd xmm0,xmm0
+064748DB: F2 0F 5A C0                    -  cvtsd2ss xmm0,xmm0
+064748DF: E9 7D 00 00 00                 -  jmp 06474961
+064748E4: 48 8B 04 25 70 3A 50 00        -  mov rax,[00503A70]
+064748EC: 48 8B 80 08 01 00 00           -  mov rax,[rax+00000108]
+// ---------- INJECTING HERE ----------
+064748F3: F3 0F 10 40 28                 -  movss xmm0,[rax+28]
+// ---------- DONE INJECTING  ----------
+064748F8: F3 0F 5A C0                    -  cvtss2sd xmm0,xmm0
+064748FC: F2 0F 5A E8                    -  cvtsd2ss xmm5,xmm0
+06474900: F3 0F 11 6D FC                 -  movss [rbp-04],xmm5
+06474905: F3 0F 10 45 FC                 -  movss xmm0,[rbp-04]
+0647490A: F3 0F 5A C0                    -  cvtss2sd xmm0,xmm0
+0647490E: F3 0F 10 0D 7A 00 00 00        -  movss xmm1,[06474990]
+06474916: F3 0F 5A C9                    -  cvtss2sd xmm1,xmm1
+0647491A: 66 0F 2F C8                    -  comisd xmm1,xmm0
+0647491E: 7A 24                          -  jp 06474944
+06474920: 73 22                          -  jae 06474944
+}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1398</ID>
+              <Description>"Base Address"</Description>
+              <LastState RealAddress="00000000"/>
+              <VariableType>String</VariableType>
+              <Length>0</Length>
+              <Unicode>0</Unicode>
+              <CodePage>0</CodePage>
+              <ZeroTerminate>1</ZeroTerminate>
+              <Address>clock_ptr</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>1399</ID>
+                  <Description>"dayOfYear"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+24</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1400</ID>
+                  <Description>"hour"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+28</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1401</ID>
+                  <Description>"day"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+2C</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1402</ID>
+                  <Description>"month"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+30</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1403</ID>
+                  <Description>"year"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+34</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1404</ID>
+                  <Description>"dayInMonth"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+38</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1405</ID>
+                  <Description>"utc"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+3C</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1406</ID>
+                  <Description>"latitude"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+40</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1407</ID>
+                  <Description>"longitude"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+44</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1408</ID>
+                  <Description>"timeMode"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+48</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1409</ID>
+                  <Description>"dayCycle"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+4C</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1410</ID>
+                  <Description>"setTimeByCurve"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+50</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1411</ID>
+                  <Description>"hourByCurve"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+54</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1412</ID>
+                  <Description>"lst"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+58</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1413</ID>
+                  <Description>"m_radians"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+5C</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1414</ID>
+                  <Description>"m_radLatitude"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+60</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1415</ID>
+                  <Description>"m_sinLatitude"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+64</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1416</ID>
+                  <Description>"m_cosLatitude"</Description>
+                  <VariableType>Float</VariableType>
+                  <Address>+68</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1417</ID>
+                  <Description>"m_hourAndMinutes"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+6C</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1418</ID>
+                  <Description>"m_date"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+74</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1419</ID>
+                  <Description>"m_dateTime"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+80</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1420</ID>
+                  <Description>"m_daysInMonth"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+88</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1421</ID>
+                  <Description>"m_dayOfWeek"</Description>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+8C</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1422</ID>
+          <Description>"ENABLE CHEATS"</Description>
+          <Options moHideChildren="1"/>
+          <LastState/>
+          <Color>FF0000</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>[ENABLE]
+label(Cheat.threadexit)
+label(classname)
+label(namespace)
+label(assemblyname)
+label(status)
+label(domain)
+label(assembly)
+label(Cheat.Static)
+label(Cheat.Class)
+alloc(Cheat.threadstart, 2048, mono-2.0-bdwgc.mono_thread_attach)
+
+registersymbol(Cheat.Static)
+registersymbol(Cheat.Class)
+
+Cheat.threadstart:
+sub rsp,28
+
+xor rax,rax
+mov [Cheat.Class],rax
+mov [Cheat.Static],rax
+
+call mono-2.0-bdwgc.mono_get_root_domain
+cmp rax,0
+je Cheat.threadexit
+mov [domain],rax
+
+mov rcx,[domain]
+call mono-2.0-bdwgc.mono_thread_attach
+
+mov rcx,assemblyname
+mov rdx,status
+call mono-2.0-bdwgc.mono_assembly_load_with_partial_name
+cmp rax,0
+je Cheat.threadexit
+
+mov rcx,rax
+call mono-2.0-bdwgc.mono_assembly_get_image
+cmp rax,0
+je Cheat.threadexit
+mov [assembly], rax
+
+mov rcx,eax
+mov rdx,namespace
+mov r8,classname
+
+call mono-2.0-bdwgc.mono_class_from_name_case
+cmp rax,0
+je Cheat.threadexit
+mov [Cheat.Class],rax
+
+mov rcx,[domain]
+mov rdx,rax
+call mono-2.0-bdwgc.mono_class_vtable
+cmp rax,0
+je Cheat.threadexit
+
+mov rcx,rax
+call mono-2.0-bdwgc.mono_vtable_get_static_field_data
+
+mov [Cheat.Static],rax
+jmp Cheat.threadexit
+///////////////////////////////////////////////////////
+// Data section
+Cheat.Static:
+dq 0
+Cheat.Class:
+dq 0
+assemblyname:
+db 'Assembly-CSharp',0
+namespace:
+db '',0
+classname:
+db 'Cheat',0
+status:
+dq 0
+domain:
+dq 0
+assembly:
+dq 0
+
+Cheat.threadexit:
+add rsp,28
+ret
+createthread(Cheat.threadstart)
+
+[DISABLE]
+unregistersymbol(Cheat.Static)
+unregistersymbol(Cheat.Class)
+dealloc(Cheat.threadstart)
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1423</ID>
+              <Description>"UseCheats"</Description>
+              <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+              <Color>000080</Color>
+              <VariableType>Byte</VariableType>
+              <Address>Cheat.Static</Address>
+              <Offsets>
+                <Offset>58</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>1425</ID>
+                  <Description>"F2 - Toggling God Mode"</Description>
+                  <LastState Value="" RealAddress="00000000"/>
+                  <GroupHeader>1</GroupHeader>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1426</ID>
+                  <Description>"F3 - Reset Stats (Hunger/Thirst/Health/Oxygen)"</Description>
+                  <LastState Value="" RealAddress="00000000"/>
+                  <GroupHeader>1</GroupHeader>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1427</ID>
+                  <Description>"F4 - Add 10000 Items"</Description>
+                  <LastState Value="" RealAddress="00000000"/>
+                  <GroupHeader>1</GroupHeader>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1527</ID>
+                  <Description>"F5 - Setting Raft Anchoring to (True/False)"</Description>
+                  <LastState Value="" RealAddress="00000000"/>
+                  <GroupHeader>1</GroupHeader>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1524</ID>
+                  <Description>"F7 - Stop Time"</Description>
+                  <LastState Value="" RealAddress="00000000"/>
+                  <GroupHeader>1</GroupHeader>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1525</ID>
+                  <Description>"F8 - Fast Time"</Description>
+                  <LastState Value="" RealAddress="00000000"/>
+                  <GroupHeader>1</GroupHeader>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1526</ID>
+                  <Description>"F9 - Reflection (On/Off)"</Description>
+                  <LastState Value="" RealAddress="00000000"/>
+                  <GroupHeader>1</GroupHeader>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1428</ID>
+          <Description>"UNLIMITED BATTERY"</Description>
+          <LastState/>
+          <Color>800080</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Raft
+  Version: Update 11
+  Date   : 2020-02-17
+  Author : Fantomas
+}
+
+[ENABLE]
+//Battery:Update+f1
+aobscanregion(infBattery,Battery:Update,Battery:Update+220,FFCA)
+
+infBattery+01:
+  db C2
+//FF C2
+//inc edx
+registersymbol(infBattery)
+
+[DISABLE]
+infBattery+01:
+  db CA
+//FF CA
+//dec edx
+unregistersymbol(infBattery)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Battery:Update+f1
+
+1BDCBD24D26: 66 0F 2F C8                    -  comisd xmm1,xmm0
+1BDCBD24D2A: 0F 8A 2B 01 00 00              -  jp 1BDCBD24E5B
+1BDCBD24D30: 0F 87 25 01 00 00              -  ja 1BDCBD24E5B
+1BDCBD24D36: 66 0F 57 C0                    -  xorpd xmm0,xmm0
+1BDCBD24D3A: F2 0F 5A E8                    -  cvtsd2ss xmm5,xmm0
+1BDCBD24D3E: F3 0F 11 6E 58                 -  movss [rsi+58],xmm5
+1BDCBD24D43: 48 8B 46 40                    -  mov rax,[rsi+40]
+1BDCBD24D47: 48 8B C8                       -  mov rcx,rax
+1BDCBD24D4A: 83 39 00                       -  cmp dword ptr [rcx],00
+1BDCBD24D4D: 48 63 50 64                    -  movsxd  rdx,dword ptr [rax+64]
+// ---------- INJECTING HERE ----------
+1BDCBD24D51: FF CA                          -  dec edx
+1BDCBD24D53: 48 8B CE                       -  mov rcx,rsi
+// ---------- DONE INJECTING  ----------
+1BDCBD24D56: 49 BB 80 BD D6 CB BD 01 00 00  -  mov r11,000001BDCBD6BD80
+1BDCBD24D60: 41 FF D3                       -  call r11
+1BDCBD24D63: 48 8B 46 38                    -  mov rax,[rsi+38]
+1BDCBD24D67: 48 8B C8                       -  mov rcx,rax
+1BDCBD24D6A: 83 39 00                       -  cmp dword ptr [rcx],00
+1BDCBD24D6D: 48 8B 40 40                    -  mov rax,[rax+40]
+1BDCBD24D71: 48 89 45 E0                    -  mov [rbp-20],rax
+1BDCBD24D75: 48 8B 46 38                    -  mov rax,[rsi+38]
+1BDCBD24D79: 48 8B C8                       -  mov rcx,rax
+1BDCBD24D7C: 83 39 00                       -  cmp dword ptr [rcx],00
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1531</ID>
+          <Description>"UNLIMITED BATTERY V2"</Description>
+          <LastState/>
+          <Color>800080</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Raft
+  Version: Update 11
+  Date   : 2020-02-17
+  Author : Fantomas
+}
+
+[ENABLE]
+//Battery:get_CanGiveElectricity+31
+aobscanregion(infBattery,Battery:get_CanGiveElectricity,Battery:get_CanGiveElectricity+5f,4863)
+alloc(newmem,$1000,infBattery)
+
+label(code)
+label(return)
+
+newmem:
+  mov [rax+64],#50
+
+code:
+  movsxd  rax,dword ptr [rax+64]
+  test eax,eax
+  jmp return
+
+infBattery:
+  jmp newmem
+  nop
+return:
+registersymbol(infBattery)
+
+[DISABLE]
+infBattery:
+  db 48 63 40 64 85 C0
+
+unregistersymbol(infBattery)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Battery:get_CanGiveElectricity+31
+
+188777510C8: 48 89 75 F8                    -  mov [rbp-08],rsi
+188777510CC: 48 8B F1                       -  mov rsi,rcx
+188777510CF: 48 8D AD 00 00 00 00           -  lea rbp,[rbp+00000000]
+188777510D6: 49 BB 30 43 70 73 88 01 00 00  -  mov r11,0000018873704330
+188777510E0: 41 FF D3                       -  call r11
+188777510E3: 85 C0                          -  test eax,eax
+188777510E5: 75 1A                          -  jne 18877751101
+188777510E7: 48 8B 46 48                    -  mov rax,[rsi+48]
+188777510EB: 48 8B C8                       -  mov rcx,rax
+188777510EE: 83 39 00                       -  cmp dword ptr [rcx],00
+// ---------- INJECTING HERE ----------
+188777510F1: 48 63 40 64                    -  movsxd  rax,dword ptr [rax+64]
+188777510F5: 85 C0                          -  test eax,eax
+// ---------- DONE INJECTING  ----------
+188777510F7: 40 0F 9F C0                    -  setg al
+188777510FB: 48 0F B6 C0                    -  movzx rax,al
+188777510FF: EB 02                          -  jmp 18877751103
+18877751101: 33 C0                          -  xor eax,eax
+18877751103: 48 8B 75 F8                    -  mov rsi,[rbp-08]
+18877751107: 48 8D 65 00                    -  lea rsp,[rbp+00]
+1887775110B: 5D                             -  pop rbp
+1887775110C: C3                             -  ret
+1887775110D: 00 00                          -  add [rax],al
+1887775110F: 00 01                          -  add [rcx],al
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1429</ID>
+          <Description>"UNLIMITED TANK AMOUNT"</Description>
+          <LastState/>
+          <Color>800080</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Raft
+  Version: Update 12
+  Date   : 2020-10-08
+  Author : Fantomas
+}
+
+[ENABLE]
+//Tank:SetTankAmount+53
+aobscanregion(infTankAmount,Tank:SetTankAmount,Tank:SetTankAmount+9f,F30F11AE)
+
+infTankAmount+03:
+  db 96 //xmm2
+
+registersymbol(infTankAmount)
+
+[DISABLE]
+infTankAmount+03:
+  db AE //xmm5
+
+unregistersymbol(infTankAmount)
+
+{
+// ORIGINAL CODE - INJECTION POINT: Tank:SetTankAmount+53
+
+1F88EC958E1: F3 0F 10 96 88 00 00 00        -  movss xmm2,[rsi+00000088]
+1F88EC958E9: F3 0F 5A D2                    -  cvtss2sd xmm2,xmm2
+1F88EC958ED: F2 0F 5A D2                    -  cvtsd2ss xmm2,xmm2
+1F88EC958F1: F2 0F 5A C9                    -  cvtsd2ss xmm1,xmm1
+1F88EC958F5: F2 0F 5A C0                    -  cvtsd2ss xmm0,xmm0
+1F88EC958F9: 48 8D 64 24 00                 -  lea rsp,[rsp+00]
+1F88EC958FE: 49 BB 90 C0 DC 53 FA 01 00 00  -  mov r11,000001FA53DCC090
+1F88EC95908: 41 FF D3                       -  call r11
+1F88EC9590B: F3 0F 5A C0                    -  cvtss2sd xmm0,xmm0
+1F88EC9590F: F2 0F 5A E8                    -  cvtsd2ss xmm5,xmm0
+// ---------- INJECTING HERE ----------
+1F88EC95913: F3 0F 11 AE 80 00 00 00        -  movss [rsi+00000080],xmm5
+// ---------- DONE INJECTING  ----------
+1F88EC9591B: 48 8B 46 18                    -  mov rax,[rsi+18]
+1F88EC9591F: 48 85 C0                       -  test rax,rax
+1F88EC95922: 0F 84 12 00 00 00              -  je 1F88EC9593A
+1F88EC95928: 48 8B 46 18                    -  mov rax,[rsi+18]
+1F88EC9592C: 48 8B C8                       -  mov rcx,rax
+1F88EC9592F: 48 89 45 E8                    -  mov [rbp-18],rax
+1F88EC95933: FF 50 18                       -  call qword ptr [rax+18]
+1F88EC95936: 48 8B 45 E8                    -  mov rax,[rbp-18]
+1F88EC9593A: 48 8B CE                       -  mov rcx,rsi
+1F88EC9593D: 48 8B 06                       -  mov rax,[rsi]
+}
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1430</ID>
+          <Description>"VARIABLES"</Description>
+          <Options moHideChildren="1"/>
+          <LastState/>
+          <Color>800080</Color>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{ Game   : Raft
+  Version: Update 12
+  Date   : 2020-10-08
+  Author : Fantomas
+}
+
+[ENABLE]
+//WeatherManager:Update+28
+aobscanregion(variables,WeatherManager:Update,WeatherManager:Update+120,4863)
+alloc(newmem,$1000,variables)
+
+label(code)
+label(return)
+
+globalalloc(variables_ptr,8)
+
+newmem:
+  mov [variables_ptr],rax
+
+code:
+  movsxd  rax,dword ptr [rax+000000A0] //0xA0 - gameMode
+  jmp return
+
+variables:
+  jmp newmem
+  nop 2
+return:
+registersymbol(variables)
+
+[DISABLE]
+variables:
+  db 48 63 80 A0 00 00 00
+
+unregistersymbol(variables)
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: WeatherManager:Update+28
+
+1FA7930C100: 55                             -  push rbp
+1FA7930C101: 48 8B EC                       -  mov rbp,rsp
+1FA7930C104: 48 83 EC 30                    -  sub rsp,30
+1FA7930C108: 48 89 75 F8                    -  mov [rbp-08],rsi
+1FA7930C10C: 48 8B F1                       -  mov rsi,rcx
+1FA7930C10F: 48 B8 F1 EF 00 DA FA 01 00 00  -  mov rax,000001FADA00EFF1
+1FA7930C119: 0F B6 00                       -  movzx eax,byte ptr [rax]
+1FA7930C11C: 85 C0                          -  test eax,eax
+1FA7930C11E: 0F 84 EF 00 00 00              -  je 1FA7930C213
+1FA7930C124: 48 8B 46 48                    -  mov rax,[rsi+48]
+// ---------- INJECTING HERE ----------
+1FA7930C128: 48 63 80 A0 00 00 00           -  movsxd  rax,dword ptr [rax+000000A0]
+// ---------- DONE INJECTING  ----------
+1FA7930C12F: 83 F8 02                       -  cmp eax,02
+1FA7930C132: 0F 84 DB 00 00 00              -  je 1FA7930C213
+1FA7930C138: 48 8B 4E 28                    -  mov rcx,[rsi+28]
+1FA7930C13C: 33 D2                          -  xor edx,edx
+1FA7930C13E: 49 BB A0 61 E5 53 FA 01 00 00  -  mov r11,000001FA53E561A0
+1FA7930C148: 41 FF D3                       -  call r11
+1FA7930C14B: 85 C0                          -  test eax,eax
+1FA7930C14D: 0F 84 C0 00 00 00              -  je 1FA7930C213
+1FA7930C153: 48 8B 4E 30                    -  mov rcx,[rsi+30]
+1FA7930C157: 33 D2                          -  xor edx,edx
+}
+</AssemblerScript>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1431</ID>
+              <Description>"Base Address"</Description>
+              <LastState Value="" RealAddress="243FF3E5F20"/>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>Pointer</VariableType>
+              <Address>variables_ptr</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>1432</ID>
+                  <Description>"sharkVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FEEBC810"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+18</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1433</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FEEBC820"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1434</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FEEBC824"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1435</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FEEBC825"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1436</ID>
+                      <Description>"attackRateMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FEEBC828"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+18</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1437</ID>
+                      <Description>"spawnRateMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FEEBC82C"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+1C</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1438</ID>
+                  <Description>"seagullVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4F20"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+20</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1439</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4F30"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1440</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4F34"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1441</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4F35"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1442</ID>
+                      <Description>"attacksCrops"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4F38"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+18</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1443</ID>
+                  <Description>"stonebirdVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4F00"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+28</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1444</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4F10"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1445</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4F14"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1446</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4F15"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1447</ID>
+                  <Description>"pufferfishVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4EE0"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+30</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1448</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4EF0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1449</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4EF4"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1450</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4EF5"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1451</ID>
+                  <Description>"boarVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4EC0"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+38</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1452</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4ED0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1453</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4ED4"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1454</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4ED5"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1455</ID>
+                  <Description>"bearVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4EA0"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+40</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1456</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4EB0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1457</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4EB4"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1458</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4EB5"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1459</ID>
+                  <Description>"ratVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4E80"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+48</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1460</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4E90"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1461</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4E94"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1462</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4E95"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1500</ID>
+                  <Description>"butlerBotVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4E60"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+50</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1501</ID>
+                      <Description>"damageMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4E70"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1502</ID>
+                      <Description>"shouldSpawn"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4E74"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1503</ID>
+                      <Description>"isTame"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4E75"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+15</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1463</ID>
+                  <Description>"domesticVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4E40"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+58</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1464</ID>
+                      <Description>"startHunger"</Description>
+                      <LastState Value="360" RealAddress="243FF3E4E50"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1465</ID>
+                      <Description>"starveTime"</Description>
+                      <LastState Value="600" RealAddress="243FF3E4E54"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1466</ID>
+                      <Description>"hungerGain"</Description>
+                      <LastState Value="360" RealAddress="243FF3E4E58"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+18</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1467</ID>
+                  <Description>"nourishmentVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4E20"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+60</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1468</ID>
+                      <Description>"foodDecrementRateMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4E30"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1469</ID>
+                      <Description>"thirstDecrementRateMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4E34"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1470</ID>
+                  <Description>"enviromentalVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4E00"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+68</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1471</ID>
+                      <Description>"spawnObjects"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4E10"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1472</ID>
+                  <Description>"toolVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4DE0"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+70</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1473</ID>
+                      <Description>"areToolsIndestructible"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4DF0"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1474</ID>
+                      <Description>"toolDurabilityLossMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4DF4"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1475</ID>
+                      <Description>"removeSpeedMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4DF8"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+18</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1476</ID>
+                  <Description>"specialEffectsVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4DC0"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+78</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1477</ID>
+                      <Description>"damageOverTimeMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4DD0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1478</ID>
+                  <Description>"playerSpecificVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FEEBC7B0"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+80</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1479</ID>
+                      <Description>"clearInventoryOnSurrender"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FEEBC7C0"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1480</ID>
+                      <Description>"damageTakenMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FEEBC7C4"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+14</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1481</ID>
+                      <Description>"canSurrender"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FEEBC7C8"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+18</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1482</ID>
+                      <Description>"alwaysHealthy"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FEEBC7C9"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+19</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1483</ID>
+                      <Description>"unlimitedResources"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FEEBC7CA"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+1A</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1484</ID>
+                      <Description>"giveStartingItems"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FEEBC7CB"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+1B</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1485</ID>
+                      <Description>"learnAllRecipiesAtStart"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FEEBC7CC"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+1C</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1486</ID>
+                      <Description>"negateOutgoingPlayerDamage"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FEEBC7CD"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+1D</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1487</ID>
+                      <Description>"outgoingDamageMultiplierPVE"</Description>
+                      <LastState Value="1" RealAddress="243FEEBC7D0"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+20</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1488</ID>
+                      <Description>"recieveFallDamage"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FEEBC7D4"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+24</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1489</ID>
+                      <Description>"allowNoclip"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FEEBC7D5"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+25</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1490</ID>
+                  <Description>"raftSpecificVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4DA0"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+88</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1491</ID>
+                      <Description>"isRaftAlwaysAnchored"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="0" RealAddress="243FF3E4DB0"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1492</ID>
+                      <Description>"usesBuoyancy"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4DB1"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+11</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1493</ID>
+                      <Description>"prewarmFloatingItems"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4DB2"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+12</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>1494</ID>
+                      <Description>"handleRaftCollision"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4DB3"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+13</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1495</ID>
+                  <Description>"itemSpecificVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4D80"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+90</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1496</ID>
+                      <Description>"sharkBaitHealthMultiplier"</Description>
+                      <LastState Value="1" RealAddress="243FF3E4D90"/>
+                      <VariableType>Float</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1497</ID>
+                  <Description>"achievementVariables"</Description>
+                  <Options moManualExpandCollapse="1"/>
+                  <LastState Value="" RealAddress="243FF3E4D60"/>
+                  <ShowAsHex>1</ShowAsHex>
+                  <VariableType>Pointer</VariableType>
+                  <Address>+98</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>1498</ID>
+                      <Description>"trackAchievments"</Description>
+                      <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:No
+1:Yes
+</DropDownList>
+                      <LastState Value="1" RealAddress="243FF3E4D70"/>
+                      <VariableType>Byte</VariableType>
+                      <Address>+10</Address>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1499</ID>
+                  <Description>"gameMode"</Description>
+                  <DropDownList ReadOnly="1" DisplayValueAsItem="1">0:Normal
+1:Hardcore
+2:Creative
+3:Easy
+4:None
+5:Peaceful
+</DropDownList>
+                  <LastState Value="0" RealAddress="243FF3E5FC0"/>
+                  <VariableType>4 Bytes</VariableType>
+                  <Address>+A0</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols>
+    <SymbolEntry>
+      <Name>variables_ptr</Name>
+      <Address>243B9290000</Address>
+    </SymbolEntry>
+  </UserdefinedSymbols>
+</CheatTable>
